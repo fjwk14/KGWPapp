@@ -1,0 +1,52 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import type { Membership, Profile, Team } from "@/lib/types";
+
+export interface SessionContext {
+  userId: string;
+  profile: Profile;
+  membership: Membership;
+  team: Team;
+}
+
+// ログイン済み + アクティブなチーム所属を要求する。
+// 未ログイン → /login、未所属 → /onboarding にリダイレクト。
+export async function requireMembership(): Promise<SessionContext> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("id, email, name, avatar_url")
+    .eq("id", user.id)
+    .single();
+
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("id, team_id, user_id, role, status")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
+
+  if (!membership) redirect("/onboarding");
+
+  const { data: team } = await supabase
+    .from("teams")
+    .select("id, name, slug, sport, logo_url, primary_color")
+    .eq("id", membership.team_id)
+    .single();
+
+  if (!team) redirect("/onboarding");
+
+  return {
+    userId: user.id,
+    profile: profile as Profile,
+    membership: membership as Membership,
+    team: team as Team,
+  };
+}
