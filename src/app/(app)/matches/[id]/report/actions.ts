@@ -103,7 +103,7 @@ export async function updateReport(formData: FormData) {
       .slice(0, 10);
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("tactical_reports")
     .update({
       summary: String(formData.get("summary") ?? "").trim(),
@@ -116,8 +116,11 @@ export async function updateReport(formData: FormData) {
       ),
       meeting_points: toLines(formData.get("meeting_points")),
     })
-    .eq("id", reportId);
-  if (error) backTo(matchId, `更新に失敗しました: ${error.message}`);
+    .eq("id", reportId)
+    .select("id");
+  if (error || !data?.length) {
+    backTo(matchId, "更新できませんでした(権限がない可能性があります)");
+  }
 
   revalidatePath(`/matches/${matchId}/report`);
   backTo(matchId);

@@ -16,10 +16,7 @@ export default async function DashboardPage() {
         .eq("team_id", team.id)
         .order("match_date", { ascending: false, nullsFirst: false })
         .limit(3),
-      supabase
-        .from("video_clips")
-        .select("id", { count: "exact", head: false })
-        .eq("team_id", team.id),
+      supabase.from("video_clips").select("id").eq("team_id", team.id),
       supabase
         .from("clip_tags")
         .select("id, clip_id, tag_type, tag_value")
@@ -80,17 +77,22 @@ export default async function DashboardPage() {
       .filter((t) => t.tag_type === "action" && t.tag_value === "パスミス")
       .map((t) => t.clip_id)
   ).size;
-  const counterSuccess = tags.filter(
-    (t) =>
-      (t.tag_type === "phase" || t.tag_type === "action") &&
-      t.tag_value === "カウンター" &&
-      tags.some(
-        (u) =>
-          u.clip_id === t.clip_id &&
-          u.tag_type === "result" &&
-          u.tag_value === "得点"
+  // カウンター成功: 「カウンター」タグと「得点」タグが両方付いたクリップ数
+  const scoredClipIds = new Set(
+    tags
+      .filter((t) => t.tag_type === "result" && t.tag_value === "得点")
+      .map((t) => t.clip_id)
+  );
+  const counterSuccess = new Set(
+    tags
+      .filter(
+        (t) =>
+          (t.tag_type === "phase" || t.tag_type === "action") &&
+          t.tag_value === "カウンター" &&
+          scoredClipIds.has(t.clip_id)
       )
-  ).length;
+      .map((t) => t.clip_id)
+  ).size;
   const counterFail = count("result", "カウンター被弾");
   const exclusionClips = new Set(
     tags

@@ -25,11 +25,14 @@ export async function requireMembership(): Promise<SessionContext> {
     .eq("id", user.id)
     .single();
 
+  // 複数チーム所属時は最初に参加したチームを一貫して使う
+  // (MVPはシングルチーム前提。チーム切替UIは将来対応)
   const { data: membership } = await supabase
     .from("memberships")
     .select("id, team_id, user_id, role, status")
     .eq("user_id", user.id)
     .eq("status", "active")
+    .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
 

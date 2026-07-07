@@ -48,18 +48,38 @@ export async function addMember(formData: FormData) {
 }
 
 export async function updateMember(formData: FormData) {
-  await requireAdmin();
+  const { team } = await requireAdmin();
   const membershipId = String(formData.get("membership_id"));
   const role = z.enum(ROLES).safeParse(formData.get("role"));
   const status = z.enum(STATUSES).safeParse(formData.get("status"));
   if (!role.success || !status.success) backTo("/admin", "不正な入力です");
 
   const supabase = await createClient();
-  const { error } = await supabase
+
+  // 最後のadminを降格・非アクティブ化するとチーム管理が不可能になるため防ぐ
+  const losesAdmin = role.data !== "admin" || status.data !== "active";
+  if (losesAdmin) {
+    const { data: admins } = await supabase
+      .from("memberships")
+      .select("id")
+      .eq("team_id", team.id)
+      .eq("role", "admin")
+      .eq("status", "active");
+    const remaining = (admins ?? []).filter((m) => m.id !== membershipId);
+    const wasAdmin = (admins ?? []).some((m) => m.id === membershipId);
+    if (wasAdmin && remaining.length === 0) {
+      backTo("/admin", "最後の管理者は降格できません。先に別の管理者を任命してください。");
+    }
+  }
+
+  const { data, error } = await supabase
     .from("memberships")
     .update({ role: role.data, status: status.data })
-    .eq("id", membershipId);
-  if (error) backTo("/admin", `更新に失敗しました: ${error.message}`);
+    .eq("id", membershipId)
+    .select("id");
+  if (error || !data?.length) {
+    backTo("/admin", "更新できませんでした(権限がない可能性があります)");
+  }
   revalidatePath("/admin");
   backTo("/admin");
 }
@@ -98,11 +118,14 @@ export async function toggleTagTemplate(formData: FormData) {
   const isActive = String(formData.get("is_active")) === "true";
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("tag_templates")
     .update({ is_active: !isActive })
-    .eq("id", templateId);
-  if (error) backTo("/admin/tags", `更新に失敗しました: ${error.message}`);
+    .eq("id", templateId)
+    .select("id");
+  if (error || !data?.length) {
+    backTo("/admin/tags", "更新できませんでした(権限がない可能性があります)");
+  }
   revalidatePath("/admin/tags");
   backTo("/admin/tags");
 }

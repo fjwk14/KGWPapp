@@ -143,7 +143,12 @@ export function buildFallbackReport(input: ReportInput): AiReport {
   const counters = count("phase", "カウンター") + count("action", "カウンター");
   const counterConceded = count("phase", "被カウンター") + count("result", "カウンター被弾");
   const passMiss = count("action", "パスミス");
-  const exclusions = count("action", "退水") + count("action", "退水獲得");
+  // ダッシュボードの「退水関連」と同じ基準(タグ値ベース)で数える
+  const exclusions = new Set(
+    tags
+      .filter((t) => ["退水", "退水獲得", "退水守備"].includes(t.tag_value))
+      .map((t) => t.clip_id)
+  ).size;
 
   const topCauses = Object.entries(
     tags

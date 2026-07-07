@@ -44,8 +44,14 @@ export async function removeTag(formData: FormData) {
   const tagId = String(formData.get("tag_id"));
 
   const supabase = await createClient();
-  const { error } = await supabase.from("clip_tags").delete().eq("id", tagId);
-  if (error) backTo(clipId, `タグ削除に失敗しました: ${error.message}`);
+  const { data, error } = await supabase
+    .from("clip_tags")
+    .delete()
+    .eq("id", tagId)
+    .select("id");
+  if (error || !data?.length) {
+    backTo(clipId, "タグを削除できませんでした(権限がない可能性があります)");
+  }
   revalidatePath(`/clips/${clipId}`);
   backTo(clipId);
 }
@@ -79,11 +85,14 @@ export async function deleteComment(formData: FormData) {
 
   const supabase = await createClient();
   // RLSにより本人のコメントのみ削除できる
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("clip_comments")
     .delete()
-    .eq("id", commentId);
-  if (error) backTo(clipId, `削除に失敗しました: ${error.message}`);
+    .eq("id", commentId)
+    .select("id");
+  if (error || !data?.length) {
+    backTo(clipId, "コメントを削除できませんでした(本人のみ削除できます)");
+  }
   revalidatePath(`/clips/${clipId}`);
   backTo(clipId);
 }

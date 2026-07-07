@@ -7,6 +7,11 @@ describe("formatSeconds", () => {
     expect(formatSeconds(65)).toBe("1:05");
     expect(formatSeconds(615)).toBe("10:15");
   });
+
+  it("1時間以上は h:mm:ss 形式にする(水球の試合は1時間超)", () => {
+    expect(formatSeconds(3600)).toBe("1:00:00");
+    expect(formatSeconds(3700)).toBe("1:01:40");
+  });
 });
 
 describe("buildTimestampUrl", () => {
@@ -20,13 +25,21 @@ describe("buildTimestampUrl", () => {
     expect(buildTimestampUrl("https://youtu.be/abc123", 90)).toContain("t=90");
   });
 
+  it("埋め込みURLは start= を使う", () => {
+    expect(
+      buildTimestampUrl("https://www.youtube.com/embed/abc123", 90)
+    ).toContain("start=90");
+  });
+
   it("その他のURLはメディアフラグメントを付ける", () => {
     expect(buildTimestampUrl("https://example.com/video.mp4", 30)).toBe(
       "https://example.com/video.mp4#t=30"
     );
   });
 
-  it("不正なURLはそのまま返す", () => {
-    expect(buildTimestampUrl("not-a-url", 30)).toBe("not-a-url");
+  it("不正なURLや危険なスキームはリンク化しない(XSS防止)", () => {
+    expect(buildTimestampUrl("not-a-url", 30)).toBe("#");
+    expect(buildTimestampUrl("javascript:alert(1)", 30)).toBe("#");
+    expect(buildTimestampUrl("data:text/html,x", 30)).toBe("#");
   });
 });

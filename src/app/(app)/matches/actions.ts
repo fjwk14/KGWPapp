@@ -47,6 +47,12 @@ export async function updateVideoUrl(formData: FormData) {
   const matchId = String(formData.get("match_id"));
   const videoUrl = String(formData.get("video_url") ?? "").trim();
 
+  // http/https以外のスキーム(javascript:等)は保存させない
+  if (videoUrl && !/^https?:\/\//i.test(videoUrl)) {
+    redirect(
+      `/matches/${matchId}?error=${encodeURIComponent("URLはhttp(s)で始まる必要があります")}`
+    );
+  }
   if (videoUrl) {
     try {
       new URL(videoUrl);
@@ -58,13 +64,14 @@ export async function updateVideoUrl(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("matches")
     .update({ video_url: videoUrl || null })
-    .eq("id", matchId);
-  if (error) {
+    .eq("id", matchId)
+    .select("id");
+  if (error || !data?.length) {
     redirect(
-      `/matches/${matchId}?error=${encodeURIComponent(`更新に失敗しました: ${error.message}`)}`
+      `/matches/${matchId}?error=${encodeURIComponent(`更新できませんでした(権限がない可能性があります)`)}`
     );
   }
   revalidatePath(`/matches/${matchId}`);

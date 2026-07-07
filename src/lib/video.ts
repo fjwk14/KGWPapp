@@ -2,17 +2,30 @@
 // YouTubeはt=秒に対応。その他のURLはメディアフラグメント(#t=)を付ける。
 
 export function formatSeconds(total: number): string {
-  const m = Math.floor(total / 60);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 export function buildTimestampUrl(videoUrl: string, startSeconds: number): string {
   try {
     const url = new URL(videoUrl);
+    // javascript:/data:等の危険スキームはリンク化しない(XSS防止)
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return "#";
+    }
     const host = url.hostname.replace(/^www\./, "");
     if (host === "youtube.com" || host === "m.youtube.com") {
-      url.searchParams.set("t", `${startSeconds}s`);
+      // 埋め込みURLはstart=、通常のwatch/live/shortsはt=を使う
+      if (url.pathname.startsWith("/embed/")) {
+        url.searchParams.set("start", `${startSeconds}`);
+      } else {
+        url.searchParams.set("t", `${startSeconds}s`);
+      }
       return url.toString();
     }
     if (host === "youtu.be") {
@@ -22,6 +35,6 @@ export function buildTimestampUrl(videoUrl: string, startSeconds: number): strin
     url.hash = `t=${startSeconds}`;
     return url.toString();
   } catch {
-    return videoUrl;
+    return "#";
   }
 }

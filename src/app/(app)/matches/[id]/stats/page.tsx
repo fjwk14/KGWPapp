@@ -44,7 +44,10 @@ export default async function TagStatsPage({
     return acc;
   }, {});
 
-  const maxCount = Math.max(1, ...tags.map(() => 0), ...Object.values(byType).flatMap((v) => Object.values(v)));
+  const maxCount = Math.max(
+    1,
+    ...Object.values(byType).flatMap((v) => Object.values(v))
+  );
 
   return (
     <>

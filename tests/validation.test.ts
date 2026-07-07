@@ -34,6 +34,26 @@ describe("matchSchema", () => {
     ).toBe(false);
   });
 
+  it("javascript:等の危険なスキームは拒否する(XSS防止)", () => {
+    expect(
+      matchSchema.safeParse({ title: "x", video_url: "javascript:alert(1)" })
+        .success
+    ).toBe(false);
+    expect(
+      matchSchema.safeParse({ title: "x", video_url: "data:text/html,x" })
+        .success
+    ).toBe(false);
+  });
+
+  it("空欄のopponent/notesはundefinedになる(空文字を保存しない)", () => {
+    const result = matchSchema.safeParse({ title: "x", opponent: "", notes: "" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.opponent).toBeUndefined();
+      expect(result.data.notes).toBeUndefined();
+    }
+  });
+
   it("空のURLはundefinedとして受け付ける", () => {
     const result = matchSchema.safeParse({ title: "x", video_url: "" });
     expect(result.success).toBe(true);
@@ -70,6 +90,12 @@ describe("clipSchema", () => {
 
   it("タイトル必須", () => {
     expect(clipSchema.safeParse({ ...base, title: "" }).success).toBe(false);
+  });
+
+  it("開始秒の空文字は0扱いにせず必須エラーになる", () => {
+    expect(
+      clipSchema.safeParse({ ...base, start_time_seconds: "" }).success
+    ).toBe(false);
   });
 });
 
@@ -126,9 +152,13 @@ describe("aiReportSchema (AI出力のJSON型検証)", () => {
     expect(aiReportSchema.safeParse(valid).success).toBe(true);
   });
 
-  it("ai_confidenceは0〜1", () => {
-    expect(aiReportSchema.safeParse({ ...valid, ai_confidence: 1.5 }).success).toBe(false);
-    expect(aiReportSchema.safeParse({ ...valid, ai_confidence: -0.1 }).success).toBe(false);
+  it("ai_confidenceは0〜1にクランプされる(範囲外でも生成を失敗させない)", () => {
+    const over = aiReportSchema.safeParse({ ...valid, ai_confidence: 1.5 });
+    expect(over.success).toBe(true);
+    if (over.success) expect(over.data.ai_confidence).toBe(1);
+    const under = aiReportSchema.safeParse({ ...valid, ai_confidence: -0.1 });
+    expect(under.success).toBe(true);
+    if (under.success) expect(under.data.ai_confidence).toBe(0);
   });
 
   it("必須フィールド欠落は失敗する", () => {
@@ -136,9 +166,16 @@ describe("aiReportSchema (AI出力のJSON型検証)", () => {
     expect(aiReportSchema.safeParse(missing).success).toBe(false);
   });
 
-  it("練習テーマは最低1件必要", () => {
-    expect(
-      aiReportSchema.safeParse({ ...valid, recommended_training_themes: [] }).success
-    ).toBe(false);
+  it("配列は10件・タイトルは120文字に切り詰められる", () => {
+    const result = aiReportSchema.safeParse({
+      ...valid,
+      title: "あ".repeat(200),
+      key_problem_patterns: Array.from({ length: 15 }, (_, i) => `p${i}`),
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.title.length).toBe(120);
+      expect(result.data.key_problem_patterns.length).toBe(10);
+    }
   });
 });

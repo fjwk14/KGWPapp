@@ -35,16 +35,24 @@ export default async function MatchDetailPage({
   if (!match) notFound();
   const m = match as Match;
 
-  const [{ data: clipsData }, { data: tagsData }] = await Promise.all([
-    supabase
-      .from("video_clips")
-      .select("*")
-      .eq("match_id", id)
-      .order("start_time_seconds"),
-    supabase.from("clip_tags").select("*").eq("team_id", m.team_id),
-  ]);
+  const { data: clipsData } = await supabase
+    .from("video_clips")
+    .select("*")
+    .eq("match_id", id)
+    .order("start_time_seconds");
   const clips = (clipsData ?? []) as VideoClip[];
-  const allTags = (tagsData ?? []) as ClipTag[];
+
+  let allTags: ClipTag[] = [];
+  if (clips.length > 0) {
+    const { data: tagsData } = await supabase
+      .from("clip_tags")
+      .select("*")
+      .in(
+        "clip_id",
+        clips.map((c) => c.id)
+      );
+    allTags = (tagsData ?? []) as ClipTag[];
+  }
   const isStaff = can.createClip(membership.role);
 
   return (

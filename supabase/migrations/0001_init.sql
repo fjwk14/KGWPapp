@@ -227,10 +227,11 @@ language plpgsql security definer
 set search_path = public
 as $$
 begin
+  -- emailはadd_member_by_emailの照合に使うため小文字に正規化して保存する
   insert into public.users (id, email, name)
   values (
     new.id,
-    new.email,
+    lower(new.email),
     coalesce(new.raw_user_meta_data ->> 'name', split_part(new.email, '@', 1))
   )
   on conflict (id) do nothing;
@@ -284,6 +285,11 @@ begin
   on conflict (team_id, tag_type, tag_value) do nothing;
 end;
 $$;
+
+-- security definerかつ認可チェックを持たないため、PostgREST RPCとしての
+-- 呼び出しを禁止する(トリガー経由でのみ実行される)
+revoke execute on function public.seed_default_tag_templates(uuid)
+  from public, anon, authenticated;
 
 create or replace function public.handle_new_team()
 returns trigger
@@ -376,7 +382,7 @@ begin
     raise exception 'permission denied: admin only';
   end if;
 
-  select id into v_user_id from public.users where email = lower(p_email);
+  select id into v_user_id from public.users where lower(email) = lower(p_email);
   if v_user_id is null then
     raise exception 'user not found: 先に本人がサインアップしてください';
   end if;
@@ -408,6 +414,11 @@ create policy users_select on public.users for select
   using (id = auth.uid() or public.shares_team_with(id));
 create policy users_update on public.users for update
   using (id = auth.uid());
+
+-- emailはadd_member_by_emailの招待照合に使うため、クライアントからの
+-- 変更を禁止する(なりすまし招待の防止)。name/avatar_urlのみ更新可。
+revoke update on table public.users from anon, authenticated;
+grant update (name, avatar_url) on table public.users to authenticated;
 
 -- teams
 create policy teams_select on public.teams for select

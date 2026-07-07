@@ -26,7 +26,8 @@ class AnthropicProvider implements AIProvider {
 
     const response = await client.messages.create({
       model: "claude-opus-4-8",
-      max_tokens: req.maxTokens ?? 8192,
+      // adaptive thinking分も含むためJSON本文に対して余裕を持たせる
+      max_tokens: req.maxTokens ?? 16000,
       thinking: { type: "adaptive" },
       system: req.system,
       output_config: {
@@ -40,6 +41,9 @@ class AnthropicProvider implements AIProvider {
 
     if (response.stop_reason === "refusal") {
       throw new Error("AI provider refused the request");
+    }
+    if (response.stop_reason === "max_tokens") {
+      throw new Error("AI response was truncated (max_tokens)");
     }
     const text = response.content.find((b) => b.type === "text");
     if (!text || text.type !== "text") {

@@ -17,47 +17,75 @@ export const COMMENT_TYPES = [
   "coaching_note",
 ] as const;
 
+// javascript:等のスキームを拒否し、http/httpsのみ許可する
 const optionalUrl = z
   .string()
   .trim()
   .url({ message: "URLの形式が正しくありません" })
+  .refine((v) => /^https?:\/\//i.test(v), {
+    message: "URLはhttp(s)で始まる必要があります",
+  })
   .optional()
   .or(z.literal("").transform(() => undefined));
 
+// FormDataの空文字をundefinedに正規化(z.coerce.numberの""→0事故を防ぐ)
+const emptyAsUndefined = (v: unknown) =>
+  v === "" || v == null ? undefined : v;
+
+const optionalText = (max: number) =>
+  z.preprocess(
+    emptyAsUndefined,
+    z.string().trim().max(max).optional()
+  );
+
 export const matchSchema = z.object({
   title: z.string().trim().min(1, "試合名は必須です").max(120),
-  opponent: z.string().trim().max(120).optional(),
-  match_date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "日付の形式が正しくありません")
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
-  competition: z.string().trim().max(120).optional(),
-  result: z.enum(["win", "lose", "draw"]).optional().or(z.literal("").transform(() => undefined)),
-  score_for: z.coerce.number().int().min(0).max(99).optional(),
-  score_against: z.coerce.number().int().min(0).max(99).optional(),
+  opponent: optionalText(120),
+  match_date: z.preprocess(
+    emptyAsUndefined,
+    z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "日付の形式が正しくありません")
+      .optional()
+  ),
+  competition: optionalText(120),
+  result: z.preprocess(
+    emptyAsUndefined,
+    z.enum(["win", "lose", "draw"]).optional()
+  ),
+  score_for: z.preprocess(
+    emptyAsUndefined,
+    z.coerce.number().int().min(0).max(99).optional()
+  ),
+  score_against: z.preprocess(
+    emptyAsUndefined,
+    z.coerce.number().int().min(0).max(99).optional()
+  ),
   video_url: optionalUrl,
-  notes: z.string().trim().max(2000).optional(),
+  notes: optionalText(2000),
 });
 
 export const clipSchema = z
   .object({
     title: z.string().trim().min(1, "クリップ名は必須です").max(120),
-    start_time_seconds: z.coerce
-      .number()
-      .int()
-      .min(0, "開始秒は0以上にしてください"),
-    end_time_seconds: z.coerce
-      .number()
-      .int()
-      .min(1, "終了秒は1以上にしてください"),
-    quarter: z.coerce
-      .number()
-      .int()
-      .min(1, "クォーターは1〜4です")
-      .max(4, "クォーターは1〜4です")
-      .optional(),
-    description: z.string().trim().max(1000).optional(),
+    start_time_seconds: z.preprocess(
+      emptyAsUndefined,
+      z.coerce.number({ message: "開始秒は必須です" }).int().min(0, "開始秒は0以上にしてください")
+    ),
+    end_time_seconds: z.preprocess(
+      emptyAsUndefined,
+      z.coerce.number({ message: "終了秒は必須です" }).int().min(1, "終了秒は1以上にしてください")
+    ),
+    quarter: z.preprocess(
+      emptyAsUndefined,
+      z.coerce
+        .number()
+        .int()
+        .min(1, "クォーターは1〜4です")
+        .max(4, "クォーターは1〜4です")
+        .optional()
+    ),
+    description: optionalText(1000),
   })
   .refine((v) => v.start_time_seconds < v.end_time_seconds, {
     message: "開始秒は終了秒より前にしてください",
@@ -90,17 +118,24 @@ export const tagTemplateSchema = z.object({
   description: z.string().trim().max(200).optional(),
 });
 
-// AI戦術レポートの出力JSONスキーマ(AI出力の型検証に使用)
+// AI戦術レポートの出力JSONスキーマ(AI出力の型検証に使用)。
+// プロバイダーのstructured outputsは配列長や数値範囲の制約を強制できないため、
+// 型・必須フィールドは厳格に検証し、範囲・長さは正規化(クランプ)する。
 export const aiReportSchema = z.object({
-  title: z.string().min(1).max(120),
+  title: z
+    .string()
+    .min(1)
+    .transform((s) => s.slice(0, 120)),
   summary: z.string().min(1),
   offensive_findings: z.string(),
   defensive_findings: z.string(),
   transition_findings: z.string(),
-  key_problem_patterns: z.array(z.string()).max(10),
-  recommended_training_themes: z.array(z.string()).min(1).max(10),
-  meeting_points: z.array(z.string()).max(10),
-  ai_confidence: z.number().min(0).max(1),
+  key_problem_patterns: z.array(z.string()).transform((a) => a.slice(0, 10)),
+  recommended_training_themes: z
+    .array(z.string())
+    .transform((a) => a.slice(0, 10)),
+  meeting_points: z.array(z.string()).transform((a) => a.slice(0, 10)),
+  ai_confidence: z.number().transform((n) => Math.min(1, Math.max(0, n))),
 });
 
 export type AiReport = z.infer<typeof aiReportSchema>;

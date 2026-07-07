@@ -38,12 +38,19 @@ export async function signUp(formData: FormData) {
   if (!parsed.success) fail(parsed.error.issues[0].message);
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: { data: { name } },
   });
   if (error) fail(`サインアップに失敗しました: ${error.message}`);
+
+  // メール確認が有効な場合はセッションが張られないため案内を出す
+  if (!data.session) {
+    redirect(
+      `/login?error=${encodeURIComponent("確認メールを送信しました。メール内のリンクを開いてからログインしてください。")}`
+    );
+  }
 
   redirect("/dashboard");
 }
