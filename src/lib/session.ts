@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Membership, Profile, Team } from "@/lib/types";
@@ -11,7 +12,8 @@ export interface SessionContext {
 
 // ログイン済み + アクティブなチーム所属を要求する。
 // 未ログイン → /login、未所属 → /onboarding にリダイレクト。
-export async function requireMembership(): Promise<SessionContext> {
+// React cache()でリクエスト内の重複呼び出し(layout + page)を1回に集約。
+export const requireMembership = cache(async (): Promise<SessionContext> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -52,4 +54,4 @@ export async function requireMembership(): Promise<SessionContext> {
     membership: membership as Membership,
     team: team as Team,
   };
-}
+});

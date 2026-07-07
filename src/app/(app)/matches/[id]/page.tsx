@@ -11,7 +11,7 @@ import {
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
-import { formatSeconds } from "@/lib/video";
+import { formatSeconds, safeHttpUrl } from "@/lib/video";
 import type { ClipTag, Match, VideoClip } from "@/lib/types";
 import { updateVideoUrl } from "../actions";
 
@@ -76,9 +76,9 @@ export default async function MatchDetailPage({
         {m.notes && <p className="mt-2 text-sm text-slate-600">{m.notes}</p>}
 
         <div className="mt-3 border-t border-slate-100 pt-3">
-          {m.video_url ? (
+          {safeHttpUrl(m.video_url) ? (
             <a
-              href={m.video_url}
+              href={safeHttpUrl(m.video_url)!}
               target="_blank"
               rel="noreferrer"
               className="text-sm text-brand-600 underline"

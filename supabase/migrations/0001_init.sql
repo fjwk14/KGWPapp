@@ -63,7 +63,8 @@ create table public.matches (
   result text,
   score_for integer check (score_for >= 0),
   score_against integer check (score_against >= 0),
-  video_url text,
+  -- javascript:等の危険スキーム混入をDBレベルで遮断(アプリ検証のバックストップ)
+  video_url text check (video_url is null or video_url ~* '^https?://'),
   notes text,
   created_by uuid references public.users (id) on delete set null,
   created_at timestamptz not null default now(),

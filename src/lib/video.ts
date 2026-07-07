@@ -11,6 +11,12 @@ export function formatSeconds(total: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+// hrefとして安全に使えるURLのみ返す(それ以外はnull)
+export function safeHttpUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return /^https?:\/\//i.test(url) ? url : null;
+}
+
 export function buildTimestampUrl(videoUrl: string, startSeconds: number): string {
   try {
     const url = new URL(videoUrl);

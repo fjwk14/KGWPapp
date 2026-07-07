@@ -128,21 +128,32 @@ export async function createClip(formData: FormData) {
       });
     }
   }
+  // クリップ本体は作成済みのため、タグ・コメントの失敗は
+  // クリップ詳細ページ上のエラーとして通知する(無言で落とさない)
+  const failures: string[] = [];
+
   if (tagRows.length > 0) {
-    await supabase.from("clip_tags").insert(tagRows);
+    const { error: tagError } = await supabase.from("clip_tags").insert(tagRows);
+    if (tagError) failures.push("タグの保存に失敗しました");
   }
 
   // 最初のコメント(任意)
   const firstComment = String(formData.get("first_comment") ?? "").trim();
   if (firstComment) {
-    await supabase.from("clip_comments").insert({
+    const { error: commentError } = await supabase.from("clip_comments").insert({
       clip_id: clip.id,
       team_id: team.id,
       user_id: userId,
       comment: firstComment.slice(0, 1000),
       comment_type: "observation",
     });
+    if (commentError) failures.push("コメントの保存に失敗しました");
   }
 
+  if (failures.length > 0) {
+    redirect(
+      `/clips/${clip.id}?error=${encodeURIComponent(`クリップは作成されましたが、${failures.join("・")}。もう一度お試しください。`)}`
+    );
+  }
   redirect(`/clips/${clip.id}`);
 }
