@@ -1,5 +1,6 @@
 export type Role =
   | "player"
+  | "manager"
   | "tactical_staff"
   | "executive"
   | "captain"

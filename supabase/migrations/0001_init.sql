@@ -9,7 +9,7 @@ create extension if not exists "pgcrypto";
 
 -- ---------- enums ----------
 create type public.membership_role as enum
-  ('player', 'tactical_staff', 'executive', 'captain', 'admin');
+  ('player', 'manager', 'tactical_staff', 'executive', 'captain', 'admin');
 
 create type public.membership_status as enum
   ('active', 'inactive', 'graduated', 'removed');
@@ -446,11 +446,11 @@ create policy matches_select on public.matches for select
   using (public.is_team_member(team_id));
 create policy matches_insert on public.matches for insert
   with check (
-    public.has_team_role(team_id, array['tactical_staff','executive','captain','admin']::public.membership_role[])
+    public.has_team_role(team_id, array['manager','tactical_staff','executive','captain','admin']::public.membership_role[])
     and created_by = auth.uid()
   );
 create policy matches_update on public.matches for update
-  using (public.has_team_role(team_id, array['tactical_staff','executive','captain','admin']::public.membership_role[]));
+  using (public.has_team_role(team_id, array['manager','tactical_staff','executive','captain','admin']::public.membership_role[]));
 create policy matches_delete on public.matches for delete
   using (public.has_team_role(team_id, array['admin']::public.membership_role[]));
 
@@ -459,13 +459,13 @@ create policy clips_select on public.video_clips for select
   using (public.is_team_member(team_id));
 create policy clips_insert on public.video_clips for insert
   with check (
-    public.has_team_role(team_id, array['tactical_staff','executive','captain','admin']::public.membership_role[])
+    public.has_team_role(team_id, array['manager','tactical_staff','executive','captain','admin']::public.membership_role[])
     and created_by = auth.uid()
   );
 create policy clips_update on public.video_clips for update
-  using (public.has_team_role(team_id, array['tactical_staff','executive','captain','admin']::public.membership_role[]));
+  using (public.has_team_role(team_id, array['manager','tactical_staff','executive','captain','admin']::public.membership_role[]));
 create policy clips_delete on public.video_clips for delete
-  using (public.has_team_role(team_id, array['tactical_staff','executive','captain','admin']::public.membership_role[]));
+  using (public.has_team_role(team_id, array['manager','tactical_staff','executive','captain','admin']::public.membership_role[]));
 
 -- tag_templates: 閲覧は全メンバー、管理は admin
 create policy tag_templates_select on public.tag_templates for select
@@ -482,11 +482,11 @@ create policy clip_tags_select on public.clip_tags for select
   using (public.is_team_member(team_id));
 create policy clip_tags_insert on public.clip_tags for insert
   with check (
-    public.has_team_role(team_id, array['tactical_staff','executive','captain','admin']::public.membership_role[])
+    public.has_team_role(team_id, array['manager','tactical_staff','executive','captain','admin']::public.membership_role[])
     and created_by = auth.uid()
   );
 create policy clip_tags_delete on public.clip_tags for delete
-  using (public.has_team_role(team_id, array['tactical_staff','executive','captain','admin']::public.membership_role[]));
+  using (public.has_team_role(team_id, array['manager','tactical_staff','executive','captain','admin']::public.membership_role[]));
 
 -- clip_comments: 閲覧/投稿は全メンバー(playerもコメント可)、編集/削除は本人のみ
 create policy clip_comments_select on public.clip_comments for select
@@ -503,7 +503,7 @@ create policy reports_select on public.tactical_reports for select
   using (public.is_team_member(team_id));
 create policy reports_insert on public.tactical_reports for insert
   with check (
-    public.has_team_role(team_id, array['tactical_staff','executive','captain','admin']::public.membership_role[])
+    public.has_team_role(team_id, array['manager','tactical_staff','executive','captain','admin']::public.membership_role[])
     and generated_by = auth.uid()
   );
 create policy reports_update on public.tactical_reports for update

@@ -55,24 +55,26 @@ export default async function AdminPage({
         <p className="text-xs text-slate-400">
           追加したい部員に先にサインアップしてもらい、そのメールアドレスを入力してください。
         </p>
-        <form action={addMember} className="flex gap-2">
+        <form action={addMember} className="space-y-2">
           <Input
             name="email"
             type="email"
             required
             placeholder="member@example.com"
-            className="flex-1 text-sm"
+            className="text-sm"
           />
-          <Select name="role" className="w-28 shrink-0 text-sm" defaultValue="player">
-            {Object.entries(ROLE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-          <Button type="submit" className="shrink-0">
-            追加
-          </Button>
+          <div className="flex gap-2">
+            <Select name="role" className="flex-1 text-sm" defaultValue="player">
+              {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+            <Button type="submit" className="shrink-0">
+              追加
+            </Button>
+          </div>
         </form>
       </Card>
 
@@ -86,27 +88,29 @@ export default async function AdminPage({
               <span className="font-semibold">{m.users?.name ?? "不明"}</span>
               <span className="ml-2 text-xs text-slate-400">{m.users?.email}</span>
             </div>
-            <form action={updateMember} className="flex gap-2">
+            <form action={updateMember} className="space-y-2">
               <input type="hidden" name="membership_id" value={m.id} />
-              <Select
-                name="role"
-                defaultValue={m.role satisfies Role}
-                className="flex-1 text-sm"
-              >
-                {Object.entries(ROLE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
-              <Select name="status" defaultValue={m.status} className="flex-1 text-sm">
-                {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
-              <Button type="submit" variant="secondary" className="shrink-0">
+              <div className="flex gap-2">
+                <Select
+                  name="role"
+                  defaultValue={m.role satisfies Role}
+                  className="flex-1 text-sm"
+                >
+                  {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+                <Select name="status" defaultValue={m.status} className="flex-1 text-sm">
+                  {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <Button type="submit" variant="secondary" className="w-full">
                 更新
               </Button>
             </form>

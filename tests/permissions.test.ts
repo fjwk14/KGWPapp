@@ -5,7 +5,23 @@ import type { Role } from "@/lib/types";
 // RLSポリシーと同じ権限マトリクスをUI層でも検証する。
 // (DB側の実際の担保はsupabase/migrations/0001_init.sqlのRLSポリシー)
 
-const ALL_ROLES: Role[] = ["player", "tactical_staff", "executive", "captain", "admin"];
+const ALL_ROLES: Role[] = ["player", "manager", "tactical_staff", "executive", "captain", "admin"];
+
+describe("manager権限(戦術班と同等)", () => {
+  it("試合登録・クリップ作成・タグ付け・レポート生成ができる", () => {
+    expect(can.createMatch("manager")).toBe(true);
+    expect(can.editMatch("manager")).toBe(true);
+    expect(can.createClip("manager")).toBe(true);
+    expect(can.tagClip("manager")).toBe(true);
+    expect(can.generateReport("manager")).toBe(true);
+  });
+
+  it("レポート確定・チーム管理はできない", () => {
+    expect(can.editReport("manager")).toBe(false);
+    expect(can.manageTeam("manager")).toBe(false);
+    expect(can.manageTagTemplates("manager")).toBe(false);
+  });
+});
 
 describe("player権限", () => {
   it("閲覧とコメントはできる", () => {
