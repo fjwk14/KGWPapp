@@ -1,0 +1,12 @@
+[project]
+name = "instaauto"
+version = "0.1.0"
+description = "株式会社ディバイド Instagram 運用自動化ツールキット"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,10 @@
+# Core
+requests>=2.31
+PyYAML>=6.0
+python-dotenv>=1.0
+
+# AI content generation (captions / hashtags / post ideas)
+anthropic>=0.40
+
+# CLI / utilities
+python-dateutil>=2.9

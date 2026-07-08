@@ -1,0 +1,34 @@
+name: Weekly analytics report
+
+# 週次で分析レポートを生成し、成果物としてアップロードします。
+on:
+  schedule:
+    - cron: "0 0 * * 1"   # 毎週月曜 09:00 JST (00:00 UTC)
+  workflow_dispatch:
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate report
+        env:
+          PYTHONPATH: src
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: python -m instaauto report --out reports
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: instagram-weekly-report
+          path: reports/*.md

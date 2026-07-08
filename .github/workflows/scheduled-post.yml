@@ -1,0 +1,45 @@
+name: Scheduled Instagram posting
+
+# 予約投稿の自動公開。30分ごとにキューを確認し、
+# 予約時刻を過ぎた投稿を Graph API で公開します。
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # UTC 基準。JST は +9時間
+  workflow_dispatch:          # 手動実行も可能
+
+concurrency:
+  group: instagram-posting
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Publish due posts
+        env:
+          PYTHONPATH: src
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          PUBLIC_MEDIA_BASE_URL: ${{ secrets.PUBLIC_MEDIA_BASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python -m instaauto run
+
+      - name: Commit queue status updates
+        run: |
+          if ! git diff --quiet -- content/queue.yaml 2>/dev/null; then
+            git config user.name "instaauto-bot"
+            git config user.email "actions@github.com"
+            git add content/queue.yaml
+            git commit -m "chore: update post queue status [skip ci]"
+            git push
+          fi

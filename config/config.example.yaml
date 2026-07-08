@@ -1,0 +1,21 @@
+# 秘密でない運用設定。実運用では config.yaml にコピーして編集してください。
+# （config.yaml は .gitignore 済み。認証情報は .env / GitHub Secrets で管理）
+
+timezone: Asia/Tokyo
+
+# AI コンテンツ生成のブランドトーン
+brand:
+  company: 株式会社ディバイド
+  tone: 誠実で親しみやすく、専門性が伝わる
+  audience: 自社サービスに関心のあるビジネス層
+  language: 日本語
+  # 毎投稿に付けたい基本ハッシュタグ（# は不要）
+  default_hashtags:
+    - ディバイド
+    - Divide
+  # 使用を避けたい語
+  ng_words: []
+
+# 分析レポート設定
+report:
+  media_limit: 12

@@ -1,0 +1,52 @@
+name: Build reel
+
+# 画像からリール動画を生成する手動ワークフロー。
+# 生成物は artifact としてダウンロードでき、公開ホスティングへ配置して
+# キューから投稿できます。
+on:
+  workflow_dispatch:
+    inputs:
+      images_glob:
+        description: "入力画像のグロブ（例: assets/reel/*.jpg）"
+        required: true
+        default: "assets/reel/*.jpg"
+      seconds:
+        description: "1枚あたりの表示秒数"
+        required: false
+        default: "2.5"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build reel
+        env:
+          PYTHONPATH: src
+        run: |
+          shopt -s nullglob
+          images=(${{ github.event.inputs.images_glob }})
+          if [ ${#images[@]} -eq 0 ]; then
+            echo "画像が見つかりません: ${{ github.event.inputs.images_glob }}"
+            exit 1
+          fi
+          python -m instaauto make-reel "${images[@]}" \
+            -o out/reel.mp4 --seconds ${{ github.event.inputs.seconds }}
+
+      - name: Upload reel
+        uses: actions/upload-artifact@v4
+        with:
+          name: reel
+          path: out/reel.mp4
