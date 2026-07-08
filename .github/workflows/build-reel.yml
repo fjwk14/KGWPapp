@@ -14,6 +14,10 @@ on:
         description: "1枚あたりの表示秒数"
         required: false
         default: "2.5"
+      telops:
+        description: "画像ごとのテロップ（| 区切り、画像と同数。空なら無し）"
+        required: false
+        default: ""
 
 jobs:
   build:
@@ -21,8 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install ffmpeg and Japanese fonts
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-noto-cjk
 
       - uses: actions/setup-python@v5
         with:
@@ -35,6 +39,8 @@ jobs:
       - name: Build reel
         env:
           PYTHONPATH: src
+        env:
+          TELOPS: ${{ github.event.inputs.telops }}
         run: |
           shopt -s nullglob
           images=(${{ github.event.inputs.images_glob }})
@@ -42,8 +48,16 @@ jobs:
             echo "画像が見つかりません: ${{ github.event.inputs.images_glob }}"
             exit 1
           fi
+          telop_args=()
+          if [ -n "$TELOPS" ]; then
+            IFS='|' read -ra telops <<< "$TELOPS"
+            for t in "${telops[@]}"; do
+              telop_args+=(--telop "$t")
+            done
+          fi
           python -m instaauto make-reel "${images[@]}" \
-            -o out/reel.mp4 --seconds ${{ github.event.inputs.seconds }}
+            -o out/reel.mp4 --seconds ${{ github.event.inputs.seconds }} \
+            "${telop_args[@]}"
 
       - name: Upload reel
         uses: actions/upload-artifact@v4

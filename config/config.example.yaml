@@ -1,21 +1,22 @@
-# 秘密でない運用設定。実運用では config.yaml にコピーして編集してください。
-# （config.yaml は .gitignore 済み。認証情報は .env / GitHub Secrets で管理）
+# 運用設定（秘密情報は含めない — トークン類は .env / GitHub Secrets へ）
+# 実運用ではこのファイルを config/config.yaml にコピーして編集してください。
+# config.yaml が無い場合はこのファイルがそのまま使われます。
+# ブランド情報（会社・トーン・投稿の柱・ハッシュタグ）は config/brand.yaml にあります。
 
+# タイムゾーン（予約投稿の日時はすべてこのタイムゾーンで解釈）
 timezone: Asia/Tokyo
 
-# AI コンテンツ生成のブランドトーン
-brand:
-  company: 株式会社ディバイド
-  tone: 誠実で親しみやすく、専門性が伝わる
-  audience: 自社サービスに関心のあるビジネス層
-  language: 日本語
-  # 毎投稿に付けたい基本ハッシュタグ（# は不要）
-  default_hashtags:
-    - ディバイド
-    - Divide
-  # 使用を避けたい語
-  ng_words: []
+# 週間投稿プラン自動生成（generate-plan コマンド）
+plan:
+  # 週あたりの投稿回数（推奨: 2〜3）
+  posts_per_week: 3
+  # 投稿する曜日と時刻（JST）。日本のBtoB/一般混合フォロワー向けの定番時間帯
+  slots:
+    - { weekday: Tue, time: "19:00" }
+    - { weekday: Thu, time: "12:15" }
+    - { weekday: Sat, time: "20:00" }
 
-# 分析レポート設定
+# 分析レポート（report コマンド）
 report:
+  # 直近何件の投稿を対象にするか
   media_limit: 12

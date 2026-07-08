@@ -1,32 +1,45 @@
-# 投稿キュー。実運用では queue.yaml にコピーして編集してください。
-# scheduled_at はローカル時刻（config の timezone）。
-# media は「公開URL」または PUBLIC_MEDIA_BASE_URL からの相対パス。
+# 投稿キューの例。実運用では queue.yaml にコピーして編集してください。
+# （queue.yaml は Git 管理されます。GitHub Actions がこのファイルを読んで自動投稿します）
+#
+# - scheduled_at はローカル時刻（config の timezone、既定 JST）
+# - media は「公開URL」または PUBLIC_MEDIA_BASE_URL からの相対パス
+# - status: draft(下書き=公開されない) | pending(公開待ち) | published | failed
+# - pillar は brand.yaml の投稿の柱 ID。caption 省略時の AI 生成の文脈に使われます
+#
+# `python -m instaauto plan --write` で来週分の雛形を自動追加できます。
 
-- id: 2026-07-10-launch
-  scheduled_at: "2026-07-10 09:00"
+- id: 2026-07-14-new-arrival
+  scheduled_at: "2026-07-14 19:00"
   type: image
   media:
-    - posts/launch.jpg          # -> ${PUBLIC_MEDIA_BASE_URL}/posts/launch.jpg
+    - posts/new-arrival-0714.jpg   # -> ${PUBLIC_MEDIA_BASE_URL}/posts/new-arrival-0714.jpg
+  pillar: new-arrival
   caption: |
-    新サービスを本日公開しました！詳しくはプロフィールのリンクから。
-    #ディバイド #新サービス
+    今週の新入荷をご紹介します。
+    北欧テイストのフラワーベース、まとめ買いのご相談も承ります。
+
+    商品のお問い合わせはプロフィールのリンクからどうぞ。
+
+    #ディバイド #インテリア雑貨 #生活雑貨 #新入荷 #フラワーベース
   status: pending
 
-- id: 2026-07-12-reel
-  scheduled_at: "2026-07-12 18:30"
+- id: 2026-07-16-howto-reel
+  scheduled_at: "2026-07-16 12:15"
   type: reel
   media:
-    - reels/service-intro.mp4
-  # caption を省略すると topic から AI が自動生成します
-  topic: サービス紹介リール（3つの特長を紹介）
+    - reels/table-styling.mp4
+  pillar: howto
+  # caption を省略すると topic + pillar から AI が brand.yaml のトーンで自動生成します
+  topic: テーブルウェア3点でできる夏のテーブルコーディネート
   status: pending
 
-- id: 2026-07-15-carousel
-  scheduled_at: "2026-07-15 12:00"
+- id: 2026-07-18-styling-carousel
+  scheduled_at: "2026-07-18 20:00"
   type: carousel
   media:
-    - posts/case1.jpg
-    - posts/case2.jpg
-    - posts/case3.jpg
-  caption: 導入事例を3つご紹介します。スワイプでご覧ください →
+    - posts/display-case1.jpg
+    - posts/display-case2.jpg
+    - posts/display-case3.jpg
+  pillar: styling
+  caption: 店舗ディスプレイの実例を3つご紹介します。スワイプでご覧ください →
   status: pending

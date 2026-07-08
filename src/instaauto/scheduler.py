@@ -21,6 +21,7 @@ from typing import Any
 
 import yaml
 
+from .brand import Brand, check_caption
 from .content_generator import ContentGenerator
 from .graph_api import InstagramClient
 
@@ -35,6 +36,7 @@ class QueueItem:
     media: list[str]
     caption: str = ""
     topic: str = ""
+    pillar: str = ""
     status: str = "pending"
     published_id: str = ""
     error: str = ""
@@ -60,6 +62,7 @@ class QueueItem:
             media=list(media),
             caption=str(d.get("caption", "")),
             topic=str(d.get("topic", "")),
+            pillar=str(d.get("pillar", "")),
             status=str(d.get("status", "pending")),
             published_id=str(d.get("published_id", "")),
             error=str(d.get("error", "")),
@@ -77,6 +80,8 @@ class QueueItem:
             topic=self.topic,
             status=self.status,
         )
+        if self.pillar:
+            d["pillar"] = self.pillar
         if self.published_id:
             d["published_id"] = self.published_id
         if self.error:
@@ -141,11 +146,23 @@ def publish_item(
     client: InstagramClient,
     base_url: str,
     generator: ContentGenerator | None = None,
+    brand: Brand | None = None,
 ) -> str:
-    """1 件のキューアイテムを公開し、media ID を返す."""
+    """1 件のキューアイテムを公開し、media ID を返す.
+
+    brand を渡すと投稿前チェック（NG ワード・ハッシュタグ/文字数上限）を行い、
+    問題があれば公開せずにエラーにします（キュー上は failed になる）。
+    """
     caption = item.caption
     if not caption and item.topic and generator is not None:
-        caption = generator.generate_post(item.topic).full_caption()
+        caption = generator.generate_post(
+            item.topic, pillar_id=item.pillar
+        ).full_caption()
+
+    if brand is not None:
+        problems = check_caption(caption, brand)
+        if problems:
+            raise ValueError("投稿前チェック NG: " + " / ".join(problems))
 
     urls = [_resolve_media_url(m, base_url) for m in item.media]
     if not urls:
@@ -166,6 +183,7 @@ def process_due(
     base_url: str,
     generator: ContentGenerator | None = None,
     now: datetime | None = None,
+    brand: Brand | None = None,
 ) -> list[QueueItem]:
     """予約時刻を過ぎた投稿を公開し、キューを更新する.
 
@@ -174,7 +192,7 @@ def process_due(
     processed: list[QueueItem] = []
     for item in queue.due_items(now):
         try:
-            media_id = publish_item(item, client, base_url, generator)
+            media_id = publish_item(item, client, base_url, generator, brand)
             item.status = "published"
             item.published_id = media_id
             item.error = ""

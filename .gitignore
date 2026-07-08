@@ -3,9 +3,10 @@
 *.env
 !.env.example
 
-# Local config with real IDs/tokens
+# Local config overrides (config.example.yaml が既定として使われる)
 config/config.yaml
-content/queue.yaml
+# 注意: content/queue.yaml は Git 管理します（GitHub Actions が読むため）。
+# キューに秘密情報（トークン・非公開URL等）を書かないでください。
 
 # Generated media / reports
 build/

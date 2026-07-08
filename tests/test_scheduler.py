@@ -2,6 +2,7 @@ from datetime import datetime
 
 import pytest
 
+from instaauto.brand import Brand
 from instaauto.scheduler import (
     PostQueue,
     QueueItem,
@@ -121,3 +122,57 @@ def test_process_due_records_failure(tmp_path):
     )
     assert processed[0].status == "failed"
     assert "token expired" in processed[0].error
+
+
+def test_pillar_roundtrips_through_yaml(tmp_path):
+    queue = PostQueue(tmp_path / "q.yaml")
+    queue.items = [
+        QueueItem.from_dict(
+            {
+                "id": "p1",
+                "scheduled_at": "2026-07-20 19:00",
+                "type": "image",
+                "media": ["posts/a.jpg"],
+                "pillar": "new-arrival",
+            }
+        )
+    ]
+    queue.save()
+    reloaded = PostQueue(queue.path).load()
+    assert reloaded.items[0].pillar == "new-arrival"
+
+
+def test_draft_items_are_not_due():
+    item = QueueItem.from_dict(
+        {
+            "id": "d",
+            "scheduled_at": "2026-07-01 00:00",
+            "type": "image",
+            "media": ["posts/a.jpg"],
+            "status": "draft",
+        }
+    )
+    assert item.is_due(datetime(2026, 7, 5)) is False
+
+
+def test_brand_check_blocks_publication(tmp_path):
+    brand = Brand(ng_words=["日本一"])
+    queue = PostQueue(tmp_path / "q.yaml")
+    queue.items = [
+        QueueItem.from_dict(
+            {
+                "id": "ng",
+                "scheduled_at": "2026-07-01 00:00",
+                "type": "image",
+                "media": ["posts/a.jpg"],
+                "caption": "当社は日本一の品揃え",
+            }
+        )
+    ]
+    client = _FakeClient()
+    processed = process_due(
+        queue, client, base_url="https://cdn", now=datetime(2026, 7, 5), brand=brand
+    )
+    assert processed[0].status == "failed"
+    assert "NG ワード" in processed[0].error
+    assert client.calls == []  # 公開 API は呼ばれない
