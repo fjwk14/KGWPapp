@@ -3,6 +3,7 @@ import type { Role } from "./types";
 // RLSポリシーと同一のロール構成。UI表示制御に使うが、
 // 実際のアクセス制御はSupabase RLSが担保する。
 export const STAFF_ROLES: Role[] = [
+  "manager",
   "tactical_staff",
   "executive",
   "captain",
@@ -32,6 +33,7 @@ export const can = {
 
 export const ROLE_LABELS: Record<Role, string> = {
   player: "選手",
+  manager: "マネージャー",
   tactical_staff: "戦術班",
   executive: "幹部",
   captain: "主将",

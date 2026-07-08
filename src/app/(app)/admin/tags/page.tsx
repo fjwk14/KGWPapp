@@ -48,22 +48,24 @@ export default async function TagTemplatesPage({
 
       <Card className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-600">タグを追加</h2>
-        <form action={addTagTemplate} className="flex gap-2">
-          <Select name="tag_type" className="w-32 shrink-0 text-sm" defaultValue="action">
-            {Object.entries(TAG_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-          <Input
-            name="tag_value"
-            required
-            maxLength={60}
-            placeholder="新しいタグ名"
-            className="flex-1 text-sm"
-          />
-          <Button type="submit" className="shrink-0">
+        <form action={addTagTemplate} className="space-y-2">
+          <div className="flex gap-2">
+            <Select name="tag_type" className="w-32 shrink-0 text-sm" defaultValue="action">
+              {Object.entries(TAG_TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+            <Input
+              name="tag_value"
+              required
+              maxLength={60}
+              placeholder="新しいタグ名"
+              className="flex-1 text-sm"
+            />
+          </div>
+          <Button type="submit" className="w-full">
             追加
           </Button>
         </form>

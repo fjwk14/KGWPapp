@@ -126,6 +126,30 @@ describe.skipIf(!DATABASE_URL)("RLS統合テスト(実PostgreSQL)", () => {
       });
     });
 
+    it("managerは戦術班と同等に試合を登録できる", async () => {
+      // TEAM_Aにmanagerロールのユーザーを用意
+      await db.query(`
+        insert into auth.users (id, email, raw_user_meta_data)
+        values ('66666666-6666-6666-6666-666666666666', 'manager@example.com', '{"name":"マネージャー"}')
+        on conflict (id) do nothing`);
+      await db.query(`
+        insert into public.users (id, email, name)
+        values ('66666666-6666-6666-6666-666666666666', 'manager@example.com', 'マネージャー')
+        on conflict (id) do nothing`);
+      await db.query(`
+        insert into public.memberships (team_id, user_id, role, status)
+        values ('${TEAM_A}', '66666666-6666-6666-6666-666666666666', 'manager', 'active')
+        on conflict (team_id, user_id) do update set role = 'manager', status = 'active'`);
+
+      await asUser("66666666-6666-6666-6666-666666666666", async (q) => {
+        const res = await q(
+          "insert into matches (team_id, title, created_by) values ($1, 'manager試合', $2) returning id",
+          [TEAM_A, "66666666-6666-6666-6666-666666666666"]
+        );
+        expect(res.rowCount).toBe(1);
+      });
+    });
+
     it("created_byの偽装(他人名義での登録)はできない", async () => {
       await asUser(STAFF, async (q) => {
         await expect(

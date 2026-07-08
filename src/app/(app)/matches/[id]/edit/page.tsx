@@ -1,0 +1,140 @@
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import {
+  Button,
+  Card,
+  ErrorBanner,
+  Input,
+  Label,
+  Select,
+  Textarea,
+} from "@/components/ui";
+import { requireMembership } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
+import { can } from "@/lib/permissions";
+import type { Match } from "@/lib/types";
+import { updateMatch } from "../../actions";
+
+export default async function EditMatchPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { id } = await params;
+  const { error } = await searchParams;
+  const { membership } = await requireMembership();
+  if (!can.editMatch(membership.role)) redirect(`/matches/${id}`);
+
+  const supabase = await createClient();
+  const { data: match } = await supabase
+    .from("matches")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (!match) notFound();
+  const m = match as Match;
+
+  return (
+    <>
+      <Link href={`/matches/${id}`} className="text-xs text-brand-600 underline">
+        ← 試合詳細に戻る
+      </Link>
+      <h1 className="text-lg font-bold">試合を編集</h1>
+      <Card className="space-y-4">
+        <ErrorBanner message={error} />
+        <form action={updateMatch} className="space-y-4">
+          <input type="hidden" name="match_id" value={m.id} />
+          <div>
+            <Label htmlFor="title">試合名 *</Label>
+            <Input id="title" name="title" required defaultValue={m.title} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="opponent">対戦相手</Label>
+              <Input id="opponent" name="opponent" defaultValue={m.opponent ?? ""} />
+            </div>
+            <div>
+              <Label htmlFor="match_date">日付</Label>
+              <Input
+                id="match_date"
+                name="match_date"
+                type="date"
+                defaultValue={m.match_date ?? ""}
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="competition">大会名</Label>
+            <Input
+              id="competition"
+              name="competition"
+              defaultValue={m.competition ?? ""}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label htmlFor="result">結果</Label>
+              <Select id="result" name="result" defaultValue={m.result ?? ""}>
+                <option value="">未定</option>
+                <option value="win">勝ち</option>
+                <option value="lose">負け</option>
+                <option value="draw">引き分け</option>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="score_for">得点</Label>
+              <Input
+                id="score_for"
+                name="score_for"
+                type="number"
+                min={0}
+                max={99}
+                inputMode="numeric"
+                defaultValue={m.score_for ?? ""}
+              />
+            </div>
+            <div>
+              <Label htmlFor="score_against">失点</Label>
+              <Input
+                id="score_against"
+                name="score_against"
+                type="number"
+                min={0}
+                max={99}
+                inputMode="numeric"
+                defaultValue={m.score_against ?? ""}
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="video_url">動画URL(YouTube等)</Label>
+            <Input
+              id="video_url"
+              name="video_url"
+              type="url"
+              defaultValue={m.video_url ?? ""}
+              placeholder="https://www.youtube.com/watch?v=..."
+            />
+          </div>
+          <div>
+            <Label htmlFor="notes">メモ</Label>
+            <Textarea id="notes" name="notes" rows={3} defaultValue={m.notes ?? ""} />
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit" className="flex-1">
+              保存する
+            </Button>
+            <Link
+              href={`/matches/${id}`}
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700"
+            >
+              キャンセル
+            </Link>
+          </div>
+        </form>
+      </Card>
+    </>
+  );
+}

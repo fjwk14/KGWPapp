@@ -59,7 +59,17 @@ export default async function MatchDetailPage({
     <>
       <ErrorBanner message={error} />
       <Card>
-        <h1 className="text-lg font-bold">{m.title}</h1>
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="text-lg font-bold">{m.title}</h1>
+          {isStaff && (
+            <Link
+              href={`/matches/${m.id}/edit`}
+              className="shrink-0 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              ✏️ 編集
+            </Link>
+          )}
+        </div>
         <p className="text-sm text-slate-500">
           {m.match_date ?? "日付未設定"}
           {m.opponent ? ` / vs ${m.opponent}` : ""}
