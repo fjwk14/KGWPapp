@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clipSchema,
+  clipFormSchema,
   commentSchema,
   matchSchema,
   tagSchema,
@@ -96,6 +97,52 @@ describe("clipSchema", () => {
     expect(
       clipSchema.safeParse({ ...base, start_time_seconds: "" }).success
     ).toBe(false);
+  });
+});
+
+describe("clipFormSchema (分秒入力)", () => {
+  const base = { title: "クリップ", start_min: "10", start_sec: "15", end_min: "10", end_sec: "45" };
+
+  it("分秒を合計秒に変換する", () => {
+    const r = clipFormSchema.safeParse(base);
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.start_time_seconds).toBe(615); // 10:15
+      expect(r.data.end_time_seconds).toBe(645); // 10:45
+    }
+  });
+
+  it("分が空欄なら0分として扱う(0:30など)", () => {
+    const r = clipFormSchema.safeParse({
+      title: "x",
+      start_min: "",
+      start_sec: "30",
+      end_min: "1",
+      end_sec: "0",
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.start_time_seconds).toBe(30);
+      expect(r.data.end_time_seconds).toBe(60);
+    }
+  });
+
+  it("秒は0〜59のみ(60はエラー)", () => {
+    expect(clipFormSchema.safeParse({ ...base, start_sec: "60" }).success).toBe(false);
+  });
+
+  it("開始時間 >= 終了時間 はエラー", () => {
+    expect(
+      clipFormSchema.safeParse({ ...base, start_min: "10", start_sec: "45", end_min: "10", end_sec: "45" })
+        .success
+    ).toBe(false);
+    expect(
+      clipFormSchema.safeParse({ ...base, start_min: "11", end_min: "10" }).success
+    ).toBe(false);
+  });
+
+  it("タイトル必須", () => {
+    expect(clipFormSchema.safeParse({ ...base, title: "" }).success).toBe(false);
   });
 });
 

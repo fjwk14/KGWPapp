@@ -92,6 +92,36 @@ export const clipSchema = z
     path: ["end_time_seconds"],
   });
 
+// クリップ作成フォーム(分・秒で入力し、合計秒に変換する)
+const minField = z.preprocess(
+  (v) => (v === "" || v == null ? 0 : v),
+  z.coerce.number({ message: "分は数値で入力してください" }).int().min(0, "分は0以上です").max(999)
+);
+const secField = z.preprocess(
+  (v) => (v === "" || v == null ? 0 : v),
+  z.coerce.number({ message: "秒は数値で入力してください" }).int().min(0, "秒は0〜59です").max(59, "秒は0〜59です")
+);
+
+export const clipFormSchema = z
+  .object({
+    title: z.string().trim().min(1, "クリップ名は必須です").max(120),
+    start_min: minField,
+    start_sec: secField,
+    end_min: minField,
+    end_sec: secField,
+    description: optionalText(1000),
+  })
+  .transform((v) => ({
+    title: v.title,
+    description: v.description,
+    start_time_seconds: v.start_min * 60 + v.start_sec,
+    end_time_seconds: v.end_min * 60 + v.end_sec,
+  }))
+  .refine((v) => v.start_time_seconds < v.end_time_seconds, {
+    message: "開始時間は終了時間より前にしてください",
+    path: ["end_min"],
+  });
+
 export const tagSchema = z.object({
   tag_type: z.enum(TAG_TYPES, { message: "不正なタグ種別です" }),
   tag_value: z.string().trim().min(1, "タグ値は必須です").max(60),

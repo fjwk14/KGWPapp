@@ -5,7 +5,6 @@ import {
   ErrorBanner,
   Input,
   Label,
-  Select,
   Textarea,
   TAG_TYPE_LABELS,
 } from "@/components/ui";
@@ -71,40 +70,58 @@ export default async function NewClipPage({
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="start_time_seconds">開始(秒)*</Label>
-              <Input
-                id="start_time_seconds"
-                name="start_time_seconds"
-                type="number"
-                min={0}
-                required
-                inputMode="numeric"
-                placeholder="615"
-              />
+              <Label>開始 *</Label>
+              <div className="flex items-center gap-1">
+                <Input
+                  name="start_min"
+                  type="number"
+                  min={0}
+                  required
+                  inputMode="numeric"
+                  placeholder="10"
+                  aria-label="開始 分"
+                />
+                <span className="text-sm text-slate-500">分</span>
+                <Input
+                  name="start_sec"
+                  type="number"
+                  min={0}
+                  max={59}
+                  required
+                  inputMode="numeric"
+                  placeholder="15"
+                  aria-label="開始 秒"
+                />
+                <span className="text-sm text-slate-500">秒</span>
+              </div>
             </div>
             <div>
-              <Label htmlFor="end_time_seconds">終了(秒)*</Label>
-              <Input
-                id="end_time_seconds"
-                name="end_time_seconds"
-                type="number"
-                min={1}
-                required
-                inputMode="numeric"
-                placeholder="645"
-              />
-            </div>
-            <div>
-              <Label htmlFor="quarter">Q</Label>
-              <Select id="quarter" name="quarter" defaultValue="">
-                <option value="">-</option>
-                <option value="1">Q1</option>
-                <option value="2">Q2</option>
-                <option value="3">Q3</option>
-                <option value="4">Q4</option>
-              </Select>
+              <Label>終了 *</Label>
+              <div className="flex items-center gap-1">
+                <Input
+                  name="end_min"
+                  type="number"
+                  min={0}
+                  required
+                  inputMode="numeric"
+                  placeholder="10"
+                  aria-label="終了 分"
+                />
+                <span className="text-sm text-slate-500">分</span>
+                <Input
+                  name="end_sec"
+                  type="number"
+                  min={0}
+                  max={59}
+                  required
+                  inputMode="numeric"
+                  placeholder="45"
+                  aria-label="終了 秒"
+                />
+                <span className="text-sm text-slate-500">秒</span>
+              </div>
             </div>
           </div>
 
