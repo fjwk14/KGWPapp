@@ -112,19 +112,50 @@ export async function addTagTemplate(formData: FormData) {
   backTo("/admin/tags");
 }
 
-export async function toggleTagTemplate(formData: FormData) {
+export async function renameTagTemplate(formData: FormData) {
   await requireAdmin();
   const templateId = String(formData.get("template_id"));
-  const isActive = String(formData.get("is_active")) === "true";
+  const value = z
+    .string()
+    .trim()
+    .min(1, "タグ名を入力してください")
+    .max(60, "タグ名は60文字以内です")
+    .safeParse(formData.get("tag_value"));
+  if (!value.success) backTo("/admin/tags", value.error.issues[0].message);
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("tag_templates")
-    .update({ is_active: !isActive })
+    .update({ tag_value: value.data })
+    .eq("id", templateId)
+    .select("id");
+  if (error) {
+    backTo(
+      "/admin/tags",
+      error.code === "23505"
+        ? "同じ種別に同名のタグが既にあります"
+        : "変更できませんでした(権限がない可能性があります)"
+    );
+  }
+  if (!data?.length) {
+    backTo("/admin/tags", "変更できませんでした(権限がない可能性があります)");
+  }
+  revalidatePath("/admin/tags");
+  backTo("/admin/tags");
+}
+
+export async function deleteTagTemplate(formData: FormData) {
+  await requireAdmin();
+  const templateId = String(formData.get("template_id"));
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tag_templates")
+    .delete()
     .eq("id", templateId)
     .select("id");
   if (error || !data?.length) {
-    backTo("/admin/tags", "更新できませんでした(権限がない可能性があります)");
+    backTo("/admin/tags", "削除できませんでした(権限がない可能性があります)");
   }
   revalidatePath("/admin/tags");
   backTo("/admin/tags");

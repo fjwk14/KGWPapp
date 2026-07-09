@@ -5,6 +5,7 @@ import {
   Card,
   ErrorBanner,
   Input,
+  Label,
   Select,
   TagBadge,
   TAG_TYPE_LABELS,
@@ -13,7 +14,7 @@ import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
 import type { TagTemplate } from "@/lib/types";
-import { addTagTemplate, toggleTagTemplate } from "../actions";
+import { addTagTemplate, deleteTagTemplate, renameTagTemplate } from "../actions";
 
 export default async function TagTemplatesPage({
   searchParams,
@@ -49,20 +50,30 @@ export default async function TagTemplatesPage({
       <Card className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-600">タグを追加</h2>
         <form action={addTagTemplate} className="space-y-2">
-          <div className="flex gap-2">
-            <Select name="tag_type" className="w-32 shrink-0 text-sm" defaultValue="action">
+          <div>
+            <Label htmlFor="new_tag_type">種別</Label>
+            <Select
+              id="new_tag_type"
+              name="tag_type"
+              className="text-sm"
+              defaultValue="action"
+            >
               {Object.entries(TAG_TYPE_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
               ))}
             </Select>
+          </div>
+          <div>
+            <Label htmlFor="new_tag_value">タグ名</Label>
             <Input
+              id="new_tag_value"
               name="tag_value"
               required
               maxLength={60}
               placeholder="新しいタグ名"
-              className="flex-1 text-sm"
+              className="text-sm"
             />
           </div>
           <Button type="submit" className="w-full">
@@ -80,16 +91,36 @@ export default async function TagTemplatesPage({
           </h2>
           <ul className="divide-y divide-slate-100">
             {items.map((t) => (
-              <li key={t.id} className="flex items-center justify-between py-2 text-sm">
-                <span className={t.is_active ? "" : "text-slate-400 line-through"}>
-                  {t.tag_value}
-                </span>
-                <form action={toggleTagTemplate}>
+              <li key={t.id} className="flex items-center gap-2 py-2">
+                {/* 名前変更: 入力欄+変更ボタン */}
+                <form action={renameTagTemplate} className="flex flex-1 gap-2">
                   <input type="hidden" name="template_id" value={t.id} />
-                  <input type="hidden" name="is_active" value={String(t.is_active)} />
-                  <button className="text-xs text-brand-600 underline">
-                    {t.is_active ? "無効化" : "有効化"}
-                  </button>
+                  <Input
+                    name="tag_value"
+                    defaultValue={t.tag_value}
+                    required
+                    maxLength={60}
+                    className="flex-1 text-sm"
+                    aria-label="タグ名"
+                  />
+                  <Button
+                    type="submit"
+                    variant="secondary"
+                    className="min-h-10 shrink-0 px-3 text-xs"
+                  >
+                    変更
+                  </Button>
+                </form>
+                {/* 削除 */}
+                <form action={deleteTagTemplate}>
+                  <input type="hidden" name="template_id" value={t.id} />
+                  <Button
+                    type="submit"
+                    variant="danger"
+                    className="min-h-10 shrink-0 px-3 text-xs"
+                  >
+                    削除
+                  </Button>
                 </form>
               </li>
             ))}
