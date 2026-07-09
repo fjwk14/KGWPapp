@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireMembership } from "@/lib/session";
-import { clipSchema, matchSchema, tagSchema } from "@/lib/validation";
+import { clipFormSchema, matchSchema, tagSchema } from "@/lib/validation";
 import { can } from "@/lib/permissions";
 
 export async function createMatch(formData: FormData) {
@@ -139,11 +139,12 @@ export async function createClip(formData: FormData) {
   const matchId = String(formData.get("match_id"));
   const back = `/matches/${matchId}/clips/new`;
 
-  const parsed = clipSchema.safeParse({
+  const parsed = clipFormSchema.safeParse({
     title: formData.get("title"),
-    start_time_seconds: formData.get("start_time_seconds"),
-    end_time_seconds: formData.get("end_time_seconds"),
-    quarter: formData.get("quarter") || undefined,
+    start_min: formData.get("start_min"),
+    start_sec: formData.get("start_sec"),
+    end_min: formData.get("end_min"),
+    end_sec: formData.get("end_sec"),
     description: formData.get("description") ?? undefined,
   });
   if (!parsed.success) {
