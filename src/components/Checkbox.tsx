@@ -4,20 +4,19 @@ const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(" ")
 
 export interface CheckboxProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
-  /** Primary label rendered next to the box. */
+  /** ボックスの横に表示する主ラベル。 */
   label?: React.ReactNode;
-  /** Secondary description under the label. */
+  /** ラベルの下に表示する補足説明。 */
   description?: React.ReactNode;
-  /** Render the mixed / partial state. */
+  /** 中間（一部選択）状態を表示する。 */
   indeterminate?: boolean;
 }
 
 /**
- * Checkbox — a labelled boolean toggle with an optional description and an
- * indeterminate (mixed) state.
+ * Checkbox — 補足説明と中間（一部選択）状態に対応する、ラベル付きの真偽トグル。
  *
- * The whole row is clickable. Use `indeterminate` for "some selected"
- * parent checkboxes in a tree.
+ * 行全体がクリック可能。ツリーで「一部選択」を表す親チェックボックスには
+ * `indeterminate` を使う。
  */
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
   function Checkbox(

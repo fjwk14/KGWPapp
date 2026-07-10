@@ -9,21 +9,21 @@ const Row = (p: { children: React.ReactNode }) => (
 
 export const Tones = () => (
   <Row>
-    <Badge tone="neutral">Draft</Badge>
-    <Badge tone="primary">Beta</Badge>
-    <Badge tone="success">Active</Badge>
-    <Badge tone="warning">Pending</Badge>
-    <Badge tone="danger">Failed</Badge>
-    <Badge tone="info">New</Badge>
+    <Badge tone="neutral">下書き</Badge>
+    <Badge tone="primary">ベータ</Badge>
+    <Badge tone="success">稼働中</Badge>
+    <Badge tone="warning">保留中</Badge>
+    <Badge tone="danger">失敗</Badge>
+    <Badge tone="info">新着</Badge>
   </Row>
 );
 
 export const WithDot = () => (
   <Row>
-    <Badge tone="success" dot>Online</Badge>
-    <Badge tone="warning" dot>Degraded</Badge>
-    <Badge tone="danger" dot>Offline</Badge>
-    <Badge tone="neutral" dot>Idle</Badge>
+    <Badge tone="success" dot>オンライン</Badge>
+    <Badge tone="warning" dot>不安定</Badge>
+    <Badge tone="danger" dot>オフライン</Badge>
+    <Badge tone="neutral" dot>待機中</Badge>
   </Row>
 );
 

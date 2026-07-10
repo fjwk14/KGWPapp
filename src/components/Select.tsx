@@ -3,27 +3,27 @@ import React from "react";
 const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(" ");
 
 export interface SelectOption {
-  /** Value submitted / reported on change. */
+  /** 選択・変更時に送信／通知される値。 */
   value: string;
-  /** Human-readable label. Defaults to `value`. */
+  /** 表示ラベル。省略時は `value` を使う。 */
   label?: string;
-  /** Disable this single option. */
+  /** この選択肢だけを無効化する。 */
   disabled?: boolean;
 }
 
 export interface SelectProps
   extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  /** Field label shown above the control. */
+  /** コントロールの上に表示するラベル。 */
   label?: string;
-  /** Helper text shown below the control when there is no error. */
+  /** エラーがないときにコントロールの下に表示する補助テキスト。 */
   hint?: string;
-  /** Error message. When set, the control is styled invalid. */
+  /** エラーメッセージ。指定するとコントロールが不正状態のスタイルになる。 */
   error?: string;
-  /** Marks the field as required (adds a red asterisk to the label). */
+  /** 必須項目としてマークする（ラベルに赤いアスタリスクを付ける）。 */
   required?: boolean;
-  /** Options to render. You can also pass `<option>` children directly. */
+  /** 表示する選択肢。`<option>` を子要素として直接渡すこともできる。 */
   options?: SelectOption[];
-  /** Placeholder shown as a disabled first option when there is no value. */
+  /** 値が未選択のときに先頭へ表示する無効化されたプレースホルダー。 */
   placeholder?: string;
 }
 
@@ -34,10 +34,11 @@ const useId = (override?: string) => {
 };
 
 /**
- * Select — a native dropdown with the Meridian field shell and chevron.
+ * Select — Meridian のフィールド外枠とシェブロンを備えたネイティブのドロップダウン。
  *
- * Pass `options` for the common case, or `<option>` children for full control.
- * Uses the platform select for accessibility and mobile ergonomics.
+ * よくある用途では `options` を渡し、細かく制御したい場合は `<option>` を
+ * 子要素として渡す。アクセシビリティとモバイルの操作性のためにネイティブの
+ * select を使用する。
  */
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   function Select(

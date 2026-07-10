@@ -4,14 +4,14 @@ const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(" ")
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
-  /** Field label shown above the control. */
+  /** コントロールの上に表示するラベル。 */
   label?: string;
-  /** Helper text shown below the control when there is no error. */
+  /** エラーがないときにコントロールの下に表示する補助テキスト。 */
   hint?: string;
-  /** Error message. When set, the control is styled invalid and the hint is
-   *  replaced by this message. */
+  /** エラーメッセージ。指定するとコントロールが不正状態のスタイルになり、
+   *  hint の代わりにこのメッセージが表示される。 */
   error?: string;
-  /** Marks the field as required (adds a red asterisk to the label). */
+  /** 必須項目としてマークする（ラベルに赤いアスタリスクを付ける）。 */
   required?: boolean;
 }
 
@@ -22,10 +22,10 @@ const useId = (override?: string) => {
 };
 
 /**
- * Input — a single-line text field with an optional label, hint, and error.
+ * Input — ラベル・補助テキスト・エラーを備えた一行テキスト入力。
  *
- * Pass `label` and `hint` for a fully composed field, or use it bare inside a
- * custom layout. Setting `error` switches the control to its invalid state.
+ * `label` と `hint` を渡せば完成された入力欄になり、単体でカスタムレイアウト内に
+ * 置くこともできる。`error` を指定するとコントロールが不正状態になる。
  */
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   function Input(

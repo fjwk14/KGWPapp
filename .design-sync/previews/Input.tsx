@@ -7,24 +7,24 @@ const Box = (p: { children: React.ReactNode }) => (
 
 export const WithLabel = () => (
   <Box>
-    <Input label="Work email" type="email" placeholder="you@company.com" hint="We'll never share your email." />
+    <Input label="勤務先メールアドレス" type="email" placeholder="you@company.com" hint="メールアドレスを共有することはありません。" />
   </Box>
 );
 
 export const Required = () => (
   <Box>
-    <Input label="Workspace name" required placeholder="Acme Inc." defaultValue="Acme Inc." />
+    <Input label="ワークスペース名" required placeholder="株式会社アクメ" defaultValue="株式会社アクメ" />
   </Box>
 );
 
 export const WithError = () => (
   <Box>
-    <Input label="Password" type="password" defaultValue="123" error="Must be at least 8 characters." />
+    <Input label="パスワード" type="password" defaultValue="123" error="8文字以上で入力してください。" />
   </Box>
 );
 
 export const Disabled = () => (
   <Box>
-    <Input label="Account ID" defaultValue="acct_9f2a1c" disabled hint="Assigned automatically." />
+    <Input label="アカウントID" defaultValue="acct_9f2a1c" disabled hint="自動的に割り当てられます。" />
   </Box>
 );

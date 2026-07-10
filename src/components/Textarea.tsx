@@ -4,13 +4,13 @@ const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(" ")
 
 export interface TextareaProps
   extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  /** Field label shown above the control. */
+  /** コントロールの上に表示するラベル。 */
   label?: string;
-  /** Helper text shown below the control when there is no error. */
+  /** エラーがないときにコントロールの下に表示する補助テキスト。 */
   hint?: string;
-  /** Error message. When set, the control is styled invalid. */
+  /** エラーメッセージ。指定するとコントロールが不正状態のスタイルになる。 */
   error?: string;
-  /** Marks the field as required (adds a red asterisk to the label). */
+  /** 必須項目としてマークする（ラベルに赤いアスタリスクを付ける）。 */
   required?: boolean;
 }
 
@@ -21,10 +21,10 @@ const useId = (override?: string) => {
 };
 
 /**
- * Textarea — a multi-line text field sharing the Input field shell.
+ * Textarea — Input と同じフィールド外枠を共有する複数行テキスト入力。
  *
- * Grows vertically only (the user can resize). Supports the same
- * `label` / `hint` / `error` composition as Input.
+ * 縦方向にのみ伸縮する（ユーザーがリサイズ可能）。Input と同じ
+ * `label` / `hint` / `error` の構成に対応する。
  */
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   function Textarea(

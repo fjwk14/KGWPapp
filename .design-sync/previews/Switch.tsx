@@ -9,27 +9,27 @@ const Stack = (p: { children: React.ReactNode }) => (
 
 export const Basic = () => (
   <Stack>
-    <Switch label="Enable two-factor authentication" defaultChecked />
-    <Switch label="Public profile" />
+    <Switch label="二段階認証を有効にする" defaultChecked />
+    <Switch label="プロフィールを公開する" />
   </Stack>
 );
 
 export const LabelStart = () => (
   <Stack>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <Switch label="Dark mode" labelPosition="start" />
+      <Switch label="ダークモード" labelPosition="start" />
     </div>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <Switch label="Compact density" labelPosition="start" defaultChecked />
+      <Switch label="コンパクト表示" labelPosition="start" defaultChecked />
     </div>
   </Stack>
 );
 
 export const States = () => (
   <Stack>
-    <Switch label="On" defaultChecked />
-    <Switch label="Off" />
-    <Switch label="Disabled" disabled />
-    <Switch label="Disabled & on" disabled defaultChecked />
+    <Switch label="オン" defaultChecked />
+    <Switch label="オフ" />
+    <Switch label="無効" disabled />
+    <Switch label="無効かつオン" disabled defaultChecked />
   </Stack>
 );

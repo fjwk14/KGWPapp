@@ -9,18 +9,18 @@ const Row = (p: { children: React.ReactNode }) => (
 
 export const Variants = () => (
   <Row>
-    <Button variant="primary">Save changes</Button>
-    <Button variant="secondary">Cancel</Button>
-    <Button variant="ghost">Learn more</Button>
-    <Button variant="danger">Delete</Button>
+    <Button variant="primary">変更を保存</Button>
+    <Button variant="secondary">キャンセル</Button>
+    <Button variant="ghost">詳しく見る</Button>
+    <Button variant="danger">削除</Button>
   </Row>
 );
 
 export const Sizes = () => (
   <Row>
-    <Button size="sm">Small</Button>
-    <Button size="md">Medium</Button>
-    <Button size="lg">Large</Button>
+    <Button size="sm">小</Button>
+    <Button size="md">中</Button>
+    <Button size="lg">大</Button>
   </Row>
 );
 
@@ -34,7 +34,7 @@ export const WithIcons = () => (
         </svg>
       }
     >
-      New project
+      新規プロジェクト
     </Button>
     <Button
       variant="secondary"
@@ -44,7 +44,7 @@ export const WithIcons = () => (
         </svg>
       }
     >
-      Continue
+      次へ進む
     </Button>
   </Row>
 );
@@ -52,13 +52,13 @@ export const WithIcons = () => (
 export const States = () => (
   <Row>
     <Button variant="primary" loading>
-      Saving
+      保存中
     </Button>
     <Button variant="primary" disabled>
-      Disabled
+      無効
     </Button>
     <Button variant="secondary" disabled>
-      Disabled
+      無効
     </Button>
   </Row>
 );

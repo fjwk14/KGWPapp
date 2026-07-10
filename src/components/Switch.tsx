@@ -4,17 +4,17 @@ const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(" ")
 
 export interface SwitchProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
-  /** Text label rendered next to the track. */
+  /** トラックの横に表示するラベル。 */
   label?: React.ReactNode;
-  /** Place the label before the track instead of after. */
+  /** ラベルをトラックの後ろではなく前に置く。 */
   labelPosition?: "start" | "end";
 }
 
 /**
- * Switch — a toggle for an immediate on/off setting (no submit required).
+ * Switch — 即座に反映される オン/オフ 設定のためのトグル（送信は不要）。
  *
- * Prefer this over Checkbox when flipping it takes effect at once, like a
- * settings preference. Renders a native checkbox for accessibility.
+ * 切り替えた瞬間に効果が及ぶ設定（環境設定など）では Checkbox より優先する。
+ * アクセシビリティのためにネイティブの checkbox をレンダリングする。
  */
 export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
   function Switch(

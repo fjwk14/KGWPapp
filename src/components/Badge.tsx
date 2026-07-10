@@ -11,19 +11,19 @@ export type BadgeTone =
   | "info";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  /** Semantic color. `neutral` for counts/labels, the rest for status. */
+  /** 意味を表す色。件数やラベルには `neutral`、状態にはそれ以外を使う。 */
   tone?: BadgeTone;
-  /** Show a leading status dot in the current tone color. */
+  /** 現在の色調の先頭ステータスドットを表示する。 */
   dot?: boolean;
-  /** Use square corners instead of the default pill shape. */
+  /** 既定のピル形状ではなく角のある形にする。 */
   square?: boolean;
 }
 
 /**
- * Badge — a small pill for status, counts, or category labels.
+ * Badge — 状態・件数・カテゴリラベルを表す小さなピル。
  *
- * Pick a `tone` that matches the meaning (success/warning/danger for status).
- * Add `dot` for a status indicator style.
+ * 意味に合った `tone` を選ぶ（状態には success/warning/danger）。
+ * ステータス表示スタイルにするには `dot` を付ける。
  */
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
   function Badge({ tone = "neutral", dot = false, square = false, className, children, ...rest }, ref) {

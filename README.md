@@ -1,20 +1,20 @@
 # Meridian UI
 
-A calm, professional React design system — slate neutrals, a muted indigo
-accent, sharp corners, and restrained elevation. Built for dashboards and
-data-dense product surfaces.
+落ち着いたプロフェッショナルな React デザインシステム。スレート系のニュートラル、
+抑えたインディゴのアクセント、シャープな角、控えめな影。ダッシュボードやデータ
+密度の高いプロダクト画面のために作られています。
 
-## Install
+## インストール
 
 ```bash
 npm install meridian-ui
 ```
 
-Peer dependencies: `react >= 18`, `react-dom >= 18`.
+ピア依存: `react >= 18`, `react-dom >= 18`。
 
-## Usage
+## 使い方
 
-Import the stylesheet once at your app root, then use the components:
+アプリのルートで一度スタイルシートを読み込み、コンポーネントを使います:
 
 ```tsx
 import "meridian-ui/styles.css";
@@ -22,23 +22,23 @@ import { Button, Card, Badge } from "meridian-ui";
 
 export function Example() {
   return (
-    <Card title="Project status" action={<Badge tone="success" dot>Active</Badge>}>
-      <p>Everything is running smoothly.</p>
-      <Button variant="primary">View details</Button>
+    <Card title="プロジェクトの状態" action={<Badge tone="success" dot>稼働中</Badge>}>
+      <p>すべて順調に稼働しています。</p>
+      <Button variant="primary">詳細を見る</Button>
     </Card>
   );
 }
 ```
 
-## Design tokens
+## デザイントークン
 
-All visual values are CSS custom properties (prefixed `--mrd-`) defined in
-`styles.css`: color scales (`--mrd-slate-*`, `--mrd-primary-*`, semantic
-hues), spacing (`--mrd-space-*`), radii (`--mrd-radius-*`), typography, and
-elevation. Override them at `:root` or on a container to re-theme.
+すべての見た目の値は CSS カスタムプロパティ（`--mrd-` 接頭辞）として `styles.css`
+に定義されています: カラースケール（`--mrd-slate-*`, `--mrd-primary-*`, セマンティック
+系）、余白（`--mrd-space-*`）、角丸（`--mrd-radius-*`）、タイポグラフィ、影。
+`:root` やコンテナで上書きすればテーマを変更できます。
 
-## Components
+## コンポーネント
 
-Actions — **Button** · Forms — **Input**, **Textarea**, **Select**,
-**Checkbox**, **Switch** · Data display — **Badge**, **Avatar** · Layout —
-**Card** · Feedback — **Alert**
+アクション — **Button** ／ フォーム — **Input**, **Textarea**, **Select**,
+**Checkbox**, **Switch** ／ データ表示 — **Badge**, **Avatar** ／ レイアウト —
+**Card** ／ フィードバック — **Alert**

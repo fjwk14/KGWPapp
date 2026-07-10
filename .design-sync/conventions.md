@@ -1,68 +1,70 @@
-# Building with Meridian UI
+# Meridian UI で画面を作る
 
-Meridian is a calm, professional React design system: slate neutrals, a muted
-indigo accent, sharp corners, restrained elevation. Compose the shipped
-components — never re-implement them — and use Meridian's design tokens for any
-layout glue you write, so everything stays on-brand.
+Meridian は落ち着いたプロフェッショナルな React デザインシステムです。スレート系の
+ニュートラル、抑えたインディゴのアクセント、シャープな角、控えめな影が特徴です。
+出荷済みのコンポーネントを**組み合わせて**使い（再実装はしない）、自分で書く
+レイアウトの隙間には Meridian のデザイントークンを使うことで、全体をブランドに
+沿った見た目に保ちます。
 
-## Setup
+## セットアップ
 
-No provider or context wrapper is required. The single requirement is that the
-design system's stylesheet is loaded (it always is in this environment via the
-`styles.css` import closure). All components are plain React and render styled
-out of the box:
+プロバイダーやコンテキストのラッパーは不要です。唯一の要件は、デザインシステムの
+スタイルシートが読み込まれていること（この環境では `styles.css` のインポート閉包に
+より常に読み込まれます）。すべてのコンポーネントは素の React で、そのままスタイルが
+当たった状態でレンダリングされます:
 
 ```tsx
 import { Button, Card, Badge } from "meridian-ui";
 
-<Card title="Project status" action={<Badge tone="success" dot>Active</Badge>}>
-  <p style={{ color: "var(--mrd-slate-600)" }}>All services operating normally.</p>
-  <Button variant="primary">View details</Button>
+<Card title="プロジェクトの状態" action={<Badge tone="success" dot>稼働中</Badge>}>
+  <p style={{ color: "var(--mrd-slate-600)" }}>すべてのサービスは正常に稼働しています。</p>
+  <Button variant="primary">詳細を見る</Button>
 </Card>
 ```
 
-## Styling idiom — use the tokens, not the internal classes
+## スタイルの流儀 — 内部クラスではなくトークンを使う
 
-Meridian components carry their own styles. You do **not** add class names to
-them. The component-level classes in the stylesheet are prefixed `mrd-*`
-(e.g. `mrd-btn`, `mrd-card`) and are **internal** — do not hand-write them.
+Meridian のコンポーネントは自身のスタイルを持っています。コンポーネントに
+クラス名を**付け足す必要はありません**。スタイルシート内のコンポーネント用クラスは
+`mrd-*` 接頭辞（例: `mrd-btn`, `mrd-card`）で、これらは**内部用**です。手書きしないで
+ください。
 
-For your **own** layout and surrounding markup, style with Meridian's CSS
-custom properties (all prefixed `--mrd-`) so your work matches the system.
-The real token families are:
+**自分で書く**レイアウトや周辺のマークアップには、Meridian の CSS カスタム
+プロパティ（すべて `--mrd-` 接頭辞）でスタイルを当て、システムに揃えます。
+実在するトークンの分類は次のとおりです:
 
-| Family | Real names (examples) | Use for |
+| 分類 | 実在する名前（例） | 用途 |
 |---|---|---|
-| Neutrals | `--mrd-slate-50` … `--mrd-slate-900` | text, borders, muted surfaces |
-| Accent | `--mrd-primary-50/100/500/600/700`, `--mrd-accent`, `--mrd-accent-hover` | brand/interactive color |
-| Semantic | `--mrd-success-*`, `--mrd-warning-*`, `--mrd-danger-*`, `--mrd-info-*` (each `-50/-200/-600/-700`) | status |
-| Roles | `--mrd-bg`, `--mrd-surface`, `--mrd-surface-muted`, `--mrd-text`, `--mrd-text-muted`, `--mrd-border`, `--mrd-border-strong` | page/surface roles |
-| Spacing | `--mrd-space-1` (4px) … `--mrd-space-8` (32px) | gap, padding, margin |
-| Radius | `--mrd-radius-sm/md/lg/full` | corners (keep them sharp — sm/md) |
-| Type | `--mrd-font-sans`, `--mrd-text-xs/sm/base/md/lg/xl`, `--mrd-weight-medium/semibold` | text |
-| Elevation | `--mrd-shadow-sm/md/lg` | shadows (use sparingly) |
+| ニュートラル | `--mrd-slate-50` 〜 `--mrd-slate-900` | テキスト・ボーダー・控えめな面 |
+| アクセント | `--mrd-primary-50/100/500/600/700`, `--mrd-accent`, `--mrd-accent-hover` | ブランド／操作色 |
+| セマンティック | `--mrd-success-*`, `--mrd-warning-*`, `--mrd-danger-*`, `--mrd-info-*`（各 `-50/-200/-600/-700`） | 状態 |
+| ロール | `--mrd-bg`, `--mrd-surface`, `--mrd-surface-muted`, `--mrd-text`, `--mrd-text-muted`, `--mrd-border`, `--mrd-border-strong` | ページ／面の役割 |
+| 余白 | `--mrd-space-1`（4px）〜 `--mrd-space-8`（32px） | gap・padding・margin |
+| 角丸 | `--mrd-radius-sm/md/lg/full` | 角（シャープに保つ — sm/md） |
+| タイポ | `--mrd-font-sans`, `--mrd-text-xs/sm/base/md/lg/xl`, `--mrd-weight-medium/semibold` | 文字 |
+| 影 | `--mrd-shadow-sm/md/lg` | 影（控えめに） |
 
-Example of on-brand layout glue:
+ブランドに沿ったレイアウトの隙間の例:
 
 ```tsx
 <div style={{ display: "grid", gap: "var(--mrd-space-4)", padding: "var(--mrd-space-6)",
   background: "var(--mrd-surface-muted)", borderRadius: "var(--mrd-radius-lg)" }}>
-  {/* Meridian components go here */}
+  {/* ここに Meridian コンポーネントを置く */}
 </div>
 ```
 
-## Components (all in the `general` group)
+## コンポーネント（すべて `general` グループ）
 
-- **Actions** — `Button` (`variant`: primary/secondary/ghost/danger, `size`, `loading`)
-- **Forms** — `Input`, `Textarea`, `Select` (all take `label`/`hint`/`error`/`required`;
-  Select also `options`/`placeholder`), `Checkbox` (`indeterminate`, `description`),
-  `Switch` (`label`, `labelPosition`)
-- **Data display** — `Badge` (`tone`, `dot`, `square`), `Avatar` (`src`, `name`, `size`, `status`, `square`)
-- **Layout** — `Card` (`title`/`subtitle`/`action`/`footer`, `raised`, `interactive`, `flush`)
-- **Feedback** — `Alert` (`tone`: info/success/warning/danger, `title`)
+- **アクション** — `Button`（`variant`: primary/secondary/ghost/danger, `size`, `loading`）
+- **フォーム** — `Input`, `Textarea`, `Select`（いずれも `label`/`hint`/`error`/`required`。
+  Select は `options`/`placeholder` も）、`Checkbox`（`indeterminate`, `description`）、
+  `Switch`（`label`, `labelPosition`）
+- **データ表示** — `Badge`（`tone`, `dot`, `square`）、`Avatar`（`src`, `name`, `size`, `status`, `square`）
+- **レイアウト** — `Card`（`title`/`subtitle`/`action`/`footer`, `raised`, `interactive`, `flush`）
+- **フィードバック** — `Alert`（`tone`: info/success/warning/danger, `title`）
 
-## Where the truth lives
+## 正確な情報の在り処
 
-Read `styles.css` (and its `@import`ed `_ds_bundle.css`) for the full token
-definitions before styling. Each component's exact prop contract is in its
-`<Name>.d.ts`, and usage guidance is in its `<Name>.prompt.md`.
+スタイルを当てる前に、トークンの完全な定義は `styles.css`（および `@import` される
+`_ds_bundle.css`）を参照してください。各コンポーネントの正確な props 契約は
+`<Name>.d.ts` に、使い方のガイドは `<Name>.prompt.md` にあります。

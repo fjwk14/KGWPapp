@@ -4,13 +4,13 @@ import { Card, Button, Badge, Avatar } from "meridian-ui";
 export const Basic = () => (
   <div style={{ maxWidth: 360 }}>
     <Card
-      title="Project status"
-      subtitle="Last updated 4 minutes ago"
-      action={<Badge tone="success" dot>Active</Badge>}
+      title="プロジェクトの状態"
+      subtitle="4分前に更新"
+      action={<Badge tone="success" dot>稼働中</Badge>}
     >
       <p style={{ margin: 0, color: "var(--mrd-slate-600)" }}>
-        All services are operating normally. The next scheduled maintenance
-        window is in 12 days.
+        すべてのサービスは正常に稼働しています。次回のメンテナンスは12日後に
+        予定されています。
       </p>
     </Card>
   </div>
@@ -19,18 +19,18 @@ export const Basic = () => (
 export const WithFooter = () => (
   <div style={{ maxWidth: 360 }}>
     <Card
-      title="Delete workspace"
-      subtitle="This action cannot be undone"
+      title="ワークスペースを削除"
+      subtitle="この操作は取り消せません"
       footer={
         <>
-          <Button variant="secondary" size="sm">Cancel</Button>
-          <Button variant="danger" size="sm">Delete</Button>
+          <Button variant="secondary" size="sm">キャンセル</Button>
+          <Button variant="danger" size="sm">削除する</Button>
         </>
       }
     >
       <p style={{ margin: 0, color: "var(--mrd-slate-600)" }}>
-        Removing this workspace will permanently delete all of its projects,
-        members, and history.
+        このワークスペースを削除すると、すべてのプロジェクト・メンバー・履歴が
+        完全に失われます。
       </p>
     </Card>
   </div>
@@ -38,10 +38,10 @@ export const WithFooter = () => (
 
 export const Interactive = () => (
   <div style={{ maxWidth: 360 }}>
-    <Card interactive title="Design tokens" subtitle="12 components">
+    <Card interactive title="デザイントークン" subtitle="12コンポーネント">
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Avatar name="Aria Chen" size="sm" />
-        <span style={{ color: "var(--mrd-slate-600)" }}>Maintained by Aria Chen</span>
+        <Avatar name="陳 亜里" size="sm" />
+        <span style={{ color: "var(--mrd-slate-600)" }}>担当：陳 亜里</span>
       </div>
     </Card>
   </div>
@@ -49,12 +49,12 @@ export const Interactive = () => (
 
 export const Raised = () => (
   <div style={{ maxWidth: 360, padding: 8, background: "var(--mrd-slate-100)" }}>
-    <Card raised title="Monthly revenue" subtitle="November 2025">
+    <Card raised title="月間売上" subtitle="2025年11月">
       <div style={{ fontSize: 28, fontWeight: 600, color: "var(--mrd-slate-900)" }}>
-        $48,290
+        ¥5,240,000
       </div>
       <div style={{ marginTop: 4 }}>
-        <Badge tone="success">+12.4% vs Oct</Badge>
+        <Badge tone="success">前月比 +12.4%</Badge>
       </div>
     </Card>
   </div>

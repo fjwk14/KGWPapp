@@ -5,30 +5,28 @@ export type ButtonSize = "sm" | "md" | "lg";
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Visual emphasis. `primary` for the main action, `secondary` for neutral
-   *  actions, `ghost` for low-emphasis toolbar actions, `danger` for
-   *  destructive actions. */
+  /** 強調度。主要アクションは `primary`、中立的な操作は `secondary`、
+   *  ツールバー等の弱い操作は `ghost`、破壊的な操作は `danger`。 */
   variant?: ButtonVariant;
-  /** Control height and padding. */
+  /** 高さとパディング（密度）を制御。 */
   size?: ButtonSize;
-  /** Stretch to fill the container width. */
+  /** コンテナ幅いっぱいに広げる。 */
   block?: boolean;
-  /** Show a spinner and block interaction while an action is in flight. */
+  /** 処理中にスピナーを表示し、操作を無効化する。 */
   loading?: boolean;
-  /** Element rendered before the label (e.g. an icon). */
+  /** ラベルの前に表示する要素（アイコンなど）。 */
   leadingIcon?: React.ReactNode;
-  /** Element rendered after the label (e.g. an icon). */
+  /** ラベルの後に表示する要素（アイコンなど）。 */
   trailingIcon?: React.ReactNode;
 }
 
 const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(" ");
 
 /**
- * Button — the primary interactive control for triggering an action.
+ * Button — アクションを実行するための主要な操作コントロール。
  *
- * Use `variant` to signal emphasis and `size` to fit the surrounding density.
- * When `loading` is set the button shows a spinner and is disabled so the
- * action can't be triggered twice.
+ * `variant` で強調度を、`size` で周囲の密度に合わせた大きさを指定する。
+ * `loading` を指定するとスピナーを表示して無効化し、二重実行を防ぐ。
  */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   function Button(

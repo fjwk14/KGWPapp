@@ -9,8 +9,8 @@ const Stack = (p: { children: React.ReactNode }) => (
 
 export const Basic = () => (
   <Stack>
-    <Checkbox label="I agree to the terms of service" defaultChecked />
-    <Checkbox label="Subscribe to the monthly newsletter" />
+    <Checkbox label="利用規約に同意する" defaultChecked />
+    <Checkbox label="月刊ニュースレターを購読する" />
   </Stack>
 );
 
@@ -18,21 +18,21 @@ export const WithDescription = () => (
   <Stack>
     <Checkbox
       defaultChecked
-      label="Email notifications"
-      description="Get notified when someone mentions you or assigns you a task."
+      label="メール通知"
+      description="メンションされたときやタスクが割り当てられたときに通知します。"
     />
     <Checkbox
-      label="Desktop notifications"
-      description="Requires granting permission in your browser."
+      label="デスクトップ通知"
+      description="ブラウザで許可を与える必要があります。"
     />
   </Stack>
 );
 
 export const States = () => (
   <Stack>
-    <Checkbox label="Checked" defaultChecked />
-    <Checkbox label="Indeterminate" indeterminate />
-    <Checkbox label="Disabled" disabled />
-    <Checkbox label="Disabled & checked" disabled defaultChecked />
+    <Checkbox label="選択済み" defaultChecked />
+    <Checkbox label="一部選択" indeterminate />
+    <Checkbox label="無効" disabled />
+    <Checkbox label="無効かつ選択済み" disabled defaultChecked />
   </Stack>
 );

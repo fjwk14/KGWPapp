@@ -4,29 +4,28 @@ const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(" ")
 
 export interface CardProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
-  /** Heading shown in the card header. Omit for a body-only card. */
+  /** ヘッダーに表示する見出し。省略するとボディのみのカードになる。 */
   title?: React.ReactNode;
-  /** Muted line under the title. */
+  /** タイトルの下に表示する控えめな一行。 */
   subtitle?: React.ReactNode;
-  /** Slot rendered on the right of the header (e.g. a Badge or menu button). */
+  /** ヘッダー右側のスロット（Badge やメニューボタンなど）。 */
   action?: React.ReactNode;
-  /** Footer content — typically buttons. Rendered in a muted footer bar. */
+  /** フッターの内容（通常はボタン）。控えめなフッターバーに表示される。 */
   footer?: React.ReactNode;
-  /** Use a shadow instead of a border. */
+  /** ボーダーの代わりに影を使う。 */
   raised?: boolean;
-  /** Add hover elevation and a pointer cursor for clickable cards. */
+  /** クリック可能なカード向けに、ホバー時の浮き上がりとポインターカーソルを付ける。 */
   interactive?: boolean;
-  /** Remove the default body padding (for edge-to-edge media/tables). */
+  /** 既定のボディ余白を取り除く（画像や表を端まで敷き詰める用途）。 */
   flush?: boolean;
 }
 
 /**
- * Card — a surface that groups related content, with optional header and
- * footer regions.
+ * Card — 関連する内容をまとめる面。ヘッダーとフッターの領域は任意。
  *
- * Pass `title` / `subtitle` / `action` for a header and `footer` for actions;
- * everything in `children` renders in the padded body. Set `flush` for
- * edge-to-edge content like tables or images.
+ * ヘッダーには `title` / `subtitle` / `action`、操作には `footer` を渡す。
+ * `children` はすべて余白付きのボディに表示される。表や画像を端まで
+ * 敷き詰めるには `flush` を指定する。
  */
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(function Card(
   { title, subtitle, action, footer, raised, interactive, flush, className, children, ...rest },

@@ -6,17 +6,17 @@ export type AvatarSize = "xs" | "sm" | "md" | "lg";
 export type AvatarStatus = "online" | "offline" | "busy";
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLSpanElement> {
-  /** Image URL. When omitted (or it fails to load) the initials show instead. */
+  /** 画像URL。省略時（または読み込み失敗時）はイニシャルを表示する。 */
   src?: string;
-  /** Full name used for the alt text and to derive initials. */
+  /** 代替テキストおよびイニシャル生成に使う氏名。 */
   name?: string;
-  /** Explicit initials override (otherwise derived from `name`). */
+  /** イニシャルの明示指定（省略時は `name` から生成）。 */
   initials?: string;
-  /** Avatar diameter. */
+  /** アバターの直径。 */
   size?: AvatarSize;
-  /** Use rounded-square corners instead of a circle. */
+  /** 円形ではなく角丸の四角形にする。 */
   square?: boolean;
-  /** Show a presence dot in the corner. */
+  /** 隅に在席状態のドットを表示する。 */
   status?: AvatarStatus;
 }
 
@@ -27,10 +27,10 @@ const initialsFrom = (name?: string) => {
 };
 
 /**
- * Avatar — a user or entity image that falls back to initials.
+ * Avatar — 画像がないときはイニシャルにフォールバックする、ユーザーや組織の画像。
  *
- * Provide `src` for a photo and `name` for the alt text / initials fallback.
- * Add `status` for a presence dot.
+ * 写真には `src` を、代替テキスト／イニシャルのフォールバックには `name` を渡す。
+ * 在席状態のドットを付けるには `status` を使う。
  */
 export const Avatar = React.forwardRef<HTMLSpanElement, AvatarProps>(
   function Avatar({ src, name, initials, size = "md", square = false, status, className, ...rest }, ref) {

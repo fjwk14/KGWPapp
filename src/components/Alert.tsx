@@ -6,11 +6,11 @@ export type AlertTone = "info" | "success" | "warning" | "danger";
 
 export interface AlertProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
-  /** Severity — sets the color and default icon. */
+  /** 深刻度。色と既定アイコンを決める。 */
   tone?: AlertTone;
-  /** Bold heading line. */
+  /** 太字の見出し行。 */
   title?: React.ReactNode;
-  /** Override the default tone icon. Pass `null` to hide the icon entirely. */
+  /** 既定の色調アイコンを上書きする。`null` を渡すとアイコンを非表示にする。 */
   icon?: React.ReactNode | null;
 }
 
@@ -38,11 +38,10 @@ const ICONS: Record<AlertTone, React.ReactNode> = {
 };
 
 /**
- * Alert — an inline, non-dismissable message that draws attention to a state
- * or outcome.
+ * Alert — 状態や結果に注意を促す、閉じられないインラインメッセージ。
  *
- * Pick a `tone` for severity; an icon is chosen automatically. Provide a
- * `title` for the headline and `children` for the supporting detail.
+ * 深刻度に応じて `tone` を選ぶと、アイコンは自動で決まる。見出しには
+ * `title`、補足の詳細には `children` を渡す。
  */
 export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(
   { tone = "info", title, icon, className, children, ...rest },

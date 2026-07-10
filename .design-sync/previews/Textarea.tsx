@@ -8,10 +8,10 @@ const Box = (p: { children: React.ReactNode }) => (
 export const WithLabel = () => (
   <Box>
     <Textarea
-      label="Description"
-      placeholder="Describe your project…"
-      hint="Markdown is supported."
-      defaultValue="A calm, professional design system for data-dense dashboards."
+      label="説明"
+      placeholder="プロジェクトの内容を入力してください…"
+      hint="Markdown が使えます。"
+      defaultValue="データ密度の高いダッシュボード向けの、落ち着いたプロフェッショナルなデザインシステム。"
     />
   </Box>
 );
@@ -19,10 +19,10 @@ export const WithLabel = () => (
 export const WithError = () => (
   <Box>
     <Textarea
-      label="Release notes"
+      label="リリースノート"
       required
       defaultValue=""
-      error="Release notes are required before publishing."
+      error="公開する前にリリースノートを入力してください。"
     />
   </Box>
 );
@@ -30,7 +30,7 @@ export const WithError = () => (
 export const Disabled = () => (
   <Box>
     <Textarea
-      label="Audit log"
+      label="監査ログ"
       disabled
       defaultValue={"2025-11-04 09:12  user.login\n2025-11-04 09:15  project.create\n2025-11-04 09:18  member.invite"}
     />
