@@ -85,7 +85,17 @@ export default async function ClipDetailPage({
         >
           ← {match.title}
         </Link>
-        <h1 className="text-lg font-bold">{clip.title}</h1>
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="text-lg font-bold">{clip.title}</h1>
+          {isStaff && (
+            <Link
+              href={`/clips/${clip.id}/edit`}
+              className="shrink-0 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              ✏️ 編集
+            </Link>
+          )}
+        </div>
         <p className="text-sm text-slate-500">
           {clip.quarter ? `Q${clip.quarter} / ` : ""}
           {formatSeconds(clip.start_time_seconds)}〜
@@ -188,25 +198,29 @@ export default async function ClipDetailPage({
 
         <form action={addComment} className="space-y-2">
           <input type="hidden" name="clip_id" value={clip.id} />
+          <Input
+            name="comment"
+            required
+            maxLength={1000}
+            placeholder="短くコメントを残す"
+            className="text-sm"
+          />
           <div className="flex gap-2">
-            <Select name="comment_type" className="w-32 shrink-0 text-sm" defaultValue="observation">
+            <Select
+              name="comment_type"
+              className="flex-1 text-sm"
+              defaultValue="observation"
+            >
               {Object.entries(COMMENT_TYPE_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
               ))}
             </Select>
-            <Input
-              name="comment"
-              required
-              maxLength={1000}
-              placeholder="短くコメントを残す"
-              className="flex-1 text-sm"
-            />
+            <Button type="submit" className="shrink-0">
+              コメントする
+            </Button>
           </div>
-          <Button type="submit" className="w-full">
-            コメントする
-          </Button>
         </form>
       </Card>
     </>
