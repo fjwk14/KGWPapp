@@ -4,7 +4,48 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireMembership } from "@/lib/session";
-import { commentSchema, tagSchema } from "@/lib/validation";
+import { clipFormSchema, commentSchema, tagSchema } from "@/lib/validation";
+import { can } from "@/lib/permissions";
+
+// クリップ本体(タイトル・開始/終了時間・説明)を編集する
+export async function updateClip(formData: FormData) {
+  const { membership } = await requireMembership();
+  const clipId = String(formData.get("clip_id"));
+  const back = `/clips/${clipId}/edit`;
+
+  if (!can.createClip(membership.role)) {
+    redirect(`${back}?error=${encodeURIComponent("編集の権限がありません(戦術班以上)")}`);
+  }
+
+  const parsed = clipFormSchema.safeParse({
+    title: formData.get("title"),
+    start_min: formData.get("start_min"),
+    start_sec: formData.get("start_sec"),
+    end_min: formData.get("end_min"),
+    end_sec: formData.get("end_sec"),
+    description: formData.get("description") ?? undefined,
+  });
+  if (!parsed.success) {
+    redirect(`${back}?error=${encodeURIComponent(parsed.error.issues[0].message)}`);
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("video_clips")
+    .update({
+      title: parsed.data.title,
+      start_time_seconds: parsed.data.start_time_seconds,
+      end_time_seconds: parsed.data.end_time_seconds,
+      description: parsed.data.description ?? null,
+    })
+    .eq("id", clipId)
+    .select("id");
+  if (error || !data?.length) {
+    redirect(`${back}?error=${encodeURIComponent("更新できませんでした(権限がない可能性があります)")}`);
+  }
+  revalidatePath(`/clips/${clipId}`);
+  redirect(`/clips/${clipId}`);
+}
 
 function backTo(clipId: string, error?: string): never {
   redirect(
