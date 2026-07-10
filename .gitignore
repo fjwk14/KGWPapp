@@ -1,0 +1,9 @@
+node_modules/
+dist/
+
+# design-sync working state (regenerated per run)
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
