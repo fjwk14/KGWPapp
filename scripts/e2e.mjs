@@ -64,28 +64,38 @@ try {
 
   await step("試合登録(バリデーションエラー→成功)", async () => {
     await page.goto(`${BASE}/matches/new`);
-    // 不正URLでエラーが出ること
-    await page.fill("#title", "E2E練習試合");
+    // 試合名が空でエラーが出ること(クライアント検証を外してサーバー側を確認)
     await page.evaluate(() => {
-      const el = document.querySelector("#video_url");
-      el.type = "text"; // ブラウザのtype=url検証を外してサーバー側検証を確認
+      document.querySelector("#title").removeAttribute("required");
     });
-    await page.fill("#video_url", "javascript:alert(1)");
     await page.click('button[type="submit"]');
     await page.waitForURL("**/matches/new?error=*");
     const err = await page.textContent("body");
-    if (!err.includes("http")) throw new Error("URLバリデーションエラーが表示されない");
-    // 正しい入力で登録
+    if (!err.includes("試合名")) throw new Error("必須バリデーションエラーが表示されない");
+    // 正しい入力で登録(スコア・動画は後から: 当日フロー)
     await page.fill("#title", "E2E練習試合");
     await page.fill("#opponent", "Z大学");
     await page.fill("#match_date", "2026-07-01");
-    await page.fill("#score_for", "10");
-    await page.fill("#score_against", "8");
-    await page.selectOption("#result", "win");
-    await page.fill("#video_url", "https://www.youtube.com/watch?v=e2etest123");
     await page.click('button[type="submit"]');
     await page.waitForURL(/\/matches\/[0-9a-f-]+$/);
     await shot("02-match-detail");
+  });
+
+  await step("試合動画を後付けできる(不正URLは拒否)", async () => {
+    // 不正スキームはサーバー側検証で拒否される
+    await page.evaluate(() => {
+      const el = document.querySelector('input[name="url"]');
+      el.type = "text"; // ブラウザのtype=url検証を外す
+    });
+    await page.fill('input[name="url"]', "javascript:alert(1)");
+    await page.click('form:has(input[name="url"]) button:has-text("追加")');
+    await page.waitForURL("**?error=*");
+    const err = await page.textContent("body");
+    if (!err.includes("URL")) throw new Error("URLバリデーションエラーが表示されない");
+    // フル動画として正しいURLを追加
+    await page.fill('input[name="url"]', "https://www.youtube.com/watch?v=e2etest123");
+    await page.click('form:has(input[name="url"]) button:has-text("追加")');
+    await page.waitForSelector("text=試合動画(1本)");
   });
 
   await step("クリップ作成(タグチップ+コメント同時登録)", async () => {

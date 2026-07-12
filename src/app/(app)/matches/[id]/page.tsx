@@ -6,14 +6,15 @@ import {
   ErrorBanner,
   Input,
   LinkButton,
+  Select,
   TagBadge,
 } from "@/components/ui";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
-import { formatSeconds, safeHttpUrl } from "@/lib/video";
-import type { ClipTag, Match, VideoClip } from "@/lib/types";
-import { updateVideoUrl } from "../actions";
+import { formatSeconds, matchVideoLabel, safeHttpUrl } from "@/lib/video";
+import type { ClipTag, Match, MatchVideo, VideoClip } from "@/lib/types";
+import { addMatchVideo, deleteMatchVideo } from "../actions";
 
 export default async function MatchDetailPage({
   params,
@@ -35,11 +36,20 @@ export default async function MatchDetailPage({
   if (!match) notFound();
   const m = match as Match;
 
-  const { data: clipsData } = await supabase
-    .from("video_clips")
-    .select("*")
-    .eq("match_id", id)
-    .order("start_time_seconds");
+  const [{ data: videosData }, { data: clipsData }] = await Promise.all([
+    supabase
+      .from("match_videos")
+      .select("*")
+      .eq("match_id", id)
+      .order("quarter", { nullsFirst: false })
+      .order("created_at"),
+    supabase
+      .from("video_clips")
+      .select("*")
+      .eq("match_id", id)
+      .order("start_time_seconds"),
+  ]);
+  const videos = (videosData ?? []) as MatchVideo[];
   const clips = (clipsData ?? []) as VideoClip[];
 
   let allTags: ClipTag[] = [];
@@ -84,36 +94,6 @@ export default async function MatchDetailPage({
           </p>
         )}
         {m.notes && <p className="mt-2 text-sm text-slate-600">{m.notes}</p>}
-
-        <div className="mt-3 border-t border-slate-100 pt-3">
-          {safeHttpUrl(m.video_url) ? (
-            <a
-              href={safeHttpUrl(m.video_url)!}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sm text-brand-600 underline"
-            >
-              🎥 試合動画を開く
-            </a>
-          ) : (
-            <p className="text-sm text-slate-400">動画URL未登録</p>
-          )}
-          {isStaff && (
-            <form action={updateVideoUrl} className="mt-2 flex gap-2">
-              <input type="hidden" name="match_id" value={m.id} />
-              <Input
-                name="video_url"
-                type="url"
-                defaultValue={m.video_url ?? ""}
-                placeholder="https://www.youtube.com/watch?v=..."
-                className="flex-1 text-sm"
-              />
-              <Button type="submit" variant="secondary" className="shrink-0">
-                保存
-              </Button>
-            </form>
-          )}
-        </div>
       </Card>
 
       <div className="grid grid-cols-2 gap-2">
@@ -132,6 +112,81 @@ export default async function MatchDetailPage({
           </LinkButton>
         )}
       </div>
+
+      {/* 試合動画: 後日共有されてからクオーター単位で添付する */}
+      <Card className="space-y-2">
+        <h2 className="text-sm font-semibold text-slate-600">
+          試合動画({videos.length}本)
+        </h2>
+        {videos.length === 0 && (
+          <p className="text-sm text-slate-400">
+            動画はまだありません。共有されたら、あとからここに追加できます
+            (スタッツの記録は動画がなくても先にできます)。
+          </p>
+        )}
+        <ul className="space-y-1.5">
+          {videos.map((v) => {
+            const url = safeHttpUrl(v.url);
+            return (
+              <li key={v.id} className="flex items-center gap-2">
+                <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold">
+                  {matchVideoLabel(v)}
+                </span>
+                {url ? (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="min-w-0 flex-1 truncate text-sm text-brand-600 underline"
+                  >
+                    🎥 動画を開く
+                  </a>
+                ) : (
+                  <span className="flex-1 text-sm text-slate-400">URL不正</span>
+                )}
+                {isStaff && (
+                  <form action={deleteMatchVideo}>
+                    <input type="hidden" name="match_id" value={m.id} />
+                    <input type="hidden" name="video_id" value={v.id} />
+                    <button
+                      className="shrink-0 px-2 text-xs text-slate-400 hover:text-red-600"
+                      aria-label={`${matchVideoLabel(v)}を削除`}
+                    >
+                      削除
+                    </button>
+                  </form>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        {isStaff && (
+          <form
+            action={addMatchVideo}
+            className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3"
+          >
+            <input type="hidden" name="match_id" value={m.id} />
+            <Select name="quarter" defaultValue="" className="w-24 shrink-0 text-sm">
+              <option value="">フル</option>
+              <option value="1">Q1</option>
+              <option value="2">Q2</option>
+              <option value="3">Q3</option>
+              <option value="4">Q4</option>
+              <option value="5">PSO</option>
+            </Select>
+            <Input
+              name="url"
+              type="url"
+              required
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="min-w-0 flex-1 text-sm"
+            />
+            <Button type="submit" variant="secondary" className="shrink-0">
+              追加
+            </Button>
+          </form>
+        )}
+      </Card>
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
@@ -162,7 +217,7 @@ export default async function MatchDetailPage({
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{clip.title}</span>
                   <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-mono">
-                    {clip.quarter ? `Q${clip.quarter} ` : ""}
+                    {clip.quarter === 5 ? "PSO " : clip.quarter ? `Q${clip.quarter} ` : ""}
                     {formatSeconds(clip.start_time_seconds)}〜
                     {formatSeconds(clip.end_time_seconds)}
                   </span>

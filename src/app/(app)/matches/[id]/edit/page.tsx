@@ -109,16 +109,6 @@ export default async function EditMatchPage({
             </div>
           </div>
           <div>
-            <Label htmlFor="video_url">動画URL(YouTube等)</Label>
-            <Input
-              id="video_url"
-              name="video_url"
-              type="url"
-              defaultValue={m.video_url ?? ""}
-              placeholder="https://www.youtube.com/watch?v=..."
-            />
-          </div>
-          <div>
             <Label htmlFor="notes">メモ</Label>
             <Textarea id="notes" name="notes" rows={3} defaultValue={m.notes ?? ""} />
           </div>
@@ -135,6 +125,9 @@ export default async function EditMatchPage({
           </div>
         </form>
       </Card>
+      <p className="text-xs text-slate-400">
+        ※ 動画は試合詳細の「試合動画」欄で追加・削除できます。
+      </p>
     </>
   );
 }

@@ -24,6 +24,7 @@ const clips: VideoClip[] = [
     id: "c1",
     team_id: "t1",
     match_id: "m1",
+    video_id: null,
     title: "カウンター失点",
     start_time_seconds: 615,
     end_time_seconds: 645,

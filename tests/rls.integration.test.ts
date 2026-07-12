@@ -444,4 +444,93 @@ describe.skipIf(!DATABASE_URL)("RLS統合テスト(実PostgreSQL)", () => {
       });
     });
   });
+
+  describe("試合動画(match_videos)", () => {
+    const MANAGER = "66666666-6666-6666-6666-666666666666";
+
+    it("スタッフ・マネージャーは動画を後付けできる", async () => {
+      for (const uid of [STAFF, MANAGER]) {
+        await asUser(uid, async (q) => {
+          const res = await q(
+            `insert into match_videos (team_id, match_id, quarter, url, created_by)
+             values ($1, $2, 1, 'https://youtube.com/watch?v=rls', $3) returning id`,
+            [TEAM_A, MATCH_A, uid]
+          );
+          expect(res.rowCount).toBe(1);
+        });
+      }
+    });
+
+    it("選手は動画を追加できない(閲覧は可)", async () => {
+      await asUser(PLAYER, async (q) => {
+        await expect(
+          q(
+            `insert into match_videos (team_id, match_id, url, created_by)
+             values ($1, $2, 'https://youtube.com/watch?v=x', $3)`,
+            [TEAM_A, MATCH_A, PLAYER]
+          )
+        ).rejects.toThrow(/row-level security/);
+      });
+      await asUser(PLAYER, async (q) => {
+        expect(
+          (await q("select id from match_videos where match_id = $1", [MATCH_A]))
+            .rowCount
+        ).toBeGreaterThan(0);
+      });
+    });
+
+    it("部外者には他チームの動画が見えない", async () => {
+      await asUser(OUTSIDER, async (q) => {
+        expect(
+          (await q("select id from match_videos where team_id = $1", [TEAM_A]))
+            .rowCount
+        ).toBe(0);
+      });
+    });
+
+    it("http(s)以外のURLはCHECK制約で拒否される", async () => {
+      await asUser(STAFF, async (q) => {
+        await expect(
+          q(
+            `insert into match_videos (team_id, match_id, url, created_by)
+             values ($1, $2, 'javascript:alert(1)', $3)`,
+            [TEAM_A, MATCH_A, STAFF]
+          )
+        ).rejects.toThrow(/check constraint/);
+      });
+    });
+
+    it("team_id偽装はトリガーで矯正される", async () => {
+      await asUser(STAFF, async (q) => {
+        const res = await q(
+          `insert into match_videos (team_id, match_id, url, created_by)
+           values ($1, $2, 'https://youtube.com/watch?v=spoof', $3) returning team_id`,
+          [TEAM_B, MATCH_A, STAFF]
+        );
+        expect(res.rows[0]?.team_id).toBe(TEAM_A);
+      });
+    });
+
+    it("動画を削除するとクリップのvideo_idはNULLになる(クリップは残る)", async () => {
+      await asUser(STAFF, async (q) => {
+        const video = await q(
+          `insert into match_videos (team_id, match_id, quarter, url, created_by)
+           values ($1, $2, 2, 'https://youtube.com/watch?v=cascade', $3) returning id`,
+          [TEAM_A, MATCH_A, STAFF]
+        );
+        const clip = await q(
+          `insert into video_clips (team_id, match_id, video_id, title, start_time_seconds, end_time_seconds, created_by)
+           values ($1, $2, $3, '動画付きクリップ', 5, 15, $4) returning id`,
+          [TEAM_A, MATCH_A, video.rows[0].id, STAFF]
+        );
+        await q("delete from match_videos where id = $1", [video.rows[0].id]);
+        const after = await q(
+          "select video_id from video_clips where id = $1",
+          [clip.rows[0].id]
+        );
+        expect(after.rowCount).toBe(1);
+        expect(after.rows[0].video_id).toBeNull();
+      });
+    });
+  });
 });

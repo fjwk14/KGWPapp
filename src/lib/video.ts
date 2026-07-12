@@ -11,6 +11,18 @@ export function formatSeconds(total: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+// 試合動画の表示名: Q1〜Q4/PSO/フル動画(+任意タイトル)
+export function matchVideoLabel(v: {
+  quarter: number | null;
+  title: string | null;
+}): string {
+  const base =
+    v.quarter == null ? "フル動画" : v.quarter === 5 ? "PSO" : `Q${v.quarter}`;
+  return v.title && v.title !== base && v.title !== "フル動画"
+    ? `${base}(${v.title})`
+    : base;
+}
+
 // hrefとして安全に使えるURLのみ返す(それ以外はnull)
 export function safeHttpUrl(url: string | null | undefined): string | null {
   if (!url) return null;

@@ -122,6 +122,27 @@ export const clipFormSchema = z
     path: ["end_min"],
   });
 
+// 試合動画の追加(動画は試合後に共有されるため後付けできる)
+export const matchVideoSchema = z.object({
+  quarter: z.preprocess(
+    emptyAsUndefined,
+    z.coerce
+      .number()
+      .int()
+      .min(1, "クオーターは1〜5です")
+      .max(5, "クオーターは1〜5です")
+      .optional()
+  ),
+  title: optionalText(120),
+  url: z
+    .string()
+    .trim()
+    .url({ message: "URLの形式が正しくありません" })
+    .refine((v) => /^https?:\/\//i.test(v), {
+      message: "URLはhttp(s)で始まる必要があります",
+    }),
+});
+
 export const tagSchema = z.object({
   tag_type: z.enum(TAG_TYPES, { message: "不正なタグ種別です" }),
   tag_value: z.string().trim().min(1, "タグ値は必須です").max(60),

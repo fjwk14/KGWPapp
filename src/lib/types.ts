@@ -63,10 +63,23 @@ export interface Match {
   created_at: string;
 }
 
+// 試合動画(後日添付。クオーター単位で複数登録できる)
+export interface MatchVideo {
+  id: string;
+  team_id: string;
+  match_id: string;
+  quarter: number | null; // 1-4 = Q1-Q4, 5 = PSO, null = フル動画
+  title: string | null;
+  url: string;
+  created_by: string | null;
+  created_at: string;
+}
+
 export interface VideoClip {
   id: string;
   team_id: string;
   match_id: string;
+  video_id: string | null;
   title: string;
   start_time_seconds: number;
   end_time_seconds: number;

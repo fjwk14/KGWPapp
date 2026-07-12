@@ -5,13 +5,15 @@ import {
   ErrorBanner,
   Input,
   Label,
+  Select,
   Textarea,
   TAG_TYPE_LABELS,
 } from "@/components/ui";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
-import type { Match, TagTemplate } from "@/lib/types";
+import { matchVideoLabel } from "@/lib/video";
+import type { Match, MatchVideo, TagTemplate } from "@/lib/types";
 import { createClip } from "../../../actions";
 
 // 1クリップ90秒以内で登録できるよう、クリップ情報 + タグ選択 +
@@ -36,14 +38,23 @@ export default async function NewClipPage({
     .maybeSingle();
   if (!match) notFound();
 
-  const { data: templatesData } = await supabase
-    .from("tag_templates")
-    .select("*")
-    .eq("team_id", team.id)
-    .eq("is_active", true)
-    .order("tag_type")
-    .order("sort_order");
+  const [{ data: templatesData }, { data: videosData }] = await Promise.all([
+    supabase
+      .from("tag_templates")
+      .select("*")
+      .eq("team_id", team.id)
+      .eq("is_active", true)
+      .order("tag_type")
+      .order("sort_order"),
+    supabase
+      .from("match_videos")
+      .select("*")
+      .eq("match_id", id)
+      .order("quarter", { nullsFirst: false })
+      .order("created_at"),
+  ]);
   const templates = (templatesData ?? []) as TagTemplate[];
+  const videos = (videosData ?? []) as MatchVideo[];
 
   const grouped = templates.reduce<Record<string, TagTemplate[]>>((acc, t) => {
     (acc[t.tag_type] ??= []).push(t);
@@ -68,6 +79,30 @@ export default async function NewClipPage({
               required
               placeholder="Q2 カウンター失点"
             />
+          </div>
+
+          <div>
+            <Label htmlFor="video_id">対象の動画</Label>
+            {videos.length > 0 ? (
+              <>
+                <Select id="video_id" name="video_id" defaultValue={videos[0].id}>
+                  {videos.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {matchVideoLabel(v)}
+                    </option>
+                  ))}
+                  <option value="">紐づけない(あとで設定)</option>
+                </Select>
+                <p className="mt-1 text-xs text-slate-400">
+                  開始・終了はこの動画内の時間を入力してください
+                </p>
+              </>
+            ) : (
+              <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                動画が未登録です。試合詳細の「試合動画」から追加すると、
+                該当場面へのリンクが使えるようになります(クリップは動画なしでも作成できます)。
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

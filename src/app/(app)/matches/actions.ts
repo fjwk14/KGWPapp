@@ -4,7 +4,12 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireMembership } from "@/lib/session";
-import { clipFormSchema, matchSchema, tagSchema } from "@/lib/validation";
+import {
+  clipFormSchema,
+  matchSchema,
+  matchVideoSchema,
+  tagSchema,
+} from "@/lib/validation";
 import { can } from "@/lib/permissions";
 
 export async function createMatch(formData: FormData) {
@@ -15,10 +20,6 @@ export async function createMatch(formData: FormData) {
     opponent: formData.get("opponent") ?? undefined,
     match_date: formData.get("match_date") ?? undefined,
     competition: formData.get("competition") ?? undefined,
-    result: formData.get("result") ?? undefined,
-    score_for: formData.get("score_for") || undefined,
-    score_against: formData.get("score_against") || undefined,
-    video_url: formData.get("video_url") ?? undefined,
     notes: formData.get("notes") ?? undefined,
   });
   if (!parsed.success) {
@@ -39,6 +40,11 @@ export async function createMatch(formData: FormData) {
     redirect(
       `/matches/new?error=${encodeURIComponent(`登録に失敗しました: ${error.message}`)}`
     );
+  }
+  // 「登録してそのままスタッツ入力へ」ボタンからの送信は
+  // 試合当日フロー: そのままリアルタイム入力(出場メンバー選択)へ進む
+  if (formData.get("next") === "live") {
+    redirect(`/matches/${data.id}/live`);
   }
   redirect(`/matches/${data.id}`);
 }
@@ -61,7 +67,6 @@ export async function updateMatch(formData: FormData) {
     result: formData.get("result") ?? undefined,
     score_for: formData.get("score_for") || undefined,
     score_against: formData.get("score_against") || undefined,
-    video_url: formData.get("video_url") ?? undefined,
     notes: formData.get("notes") ?? undefined,
   });
   if (!parsed.success) {
@@ -69,6 +74,7 @@ export async function updateMatch(formData: FormData) {
   }
 
   // 空欄になった項目はNULLで明示的にクリアする(undefinedだと未更新扱いになるため)
+  // 動画は match_videos で管理するため、ここでは扱わない
   const d = parsed.data;
   const patch = {
     title: d.title,
@@ -78,7 +84,6 @@ export async function updateMatch(formData: FormData) {
     result: d.result ?? null,
     score_for: d.score_for ?? null,
     score_against: d.score_against ?? null,
-    video_url: d.video_url ?? null,
     notes: d.notes ?? null,
   };
 
@@ -97,40 +102,57 @@ export async function updateMatch(formData: FormData) {
   redirect(`/matches/${matchId}`);
 }
 
-export async function updateVideoUrl(formData: FormData) {
-  await requireMembership();
+// 試合動画を後から添付する(クオーター単位 or フル動画)
+export async function addMatchVideo(formData: FormData) {
+  const { team, userId } = await requireMembership();
   const matchId = String(formData.get("match_id"));
-  const videoUrl = String(formData.get("video_url") ?? "").trim();
+  const back = `/matches/${matchId}`;
 
-  // http/https以外のスキーム(javascript:等)は保存させない
-  if (videoUrl && !/^https?:\/\//i.test(videoUrl)) {
-    redirect(
-      `/matches/${matchId}?error=${encodeURIComponent("URLはhttp(s)で始まる必要があります")}`
-    );
-  }
-  if (videoUrl) {
-    try {
-      new URL(videoUrl);
-    } catch {
-      redirect(
-        `/matches/${matchId}?error=${encodeURIComponent("URLの形式が正しくありません")}`
-      );
-    }
+  const parsed = matchVideoSchema.safeParse({
+    quarter: formData.get("quarter") ?? undefined,
+    title: formData.get("video_title") ?? undefined,
+    url: formData.get("url"),
+  });
+  if (!parsed.success) {
+    redirect(`${back}?error=${encodeURIComponent(parsed.error.issues[0].message)}`);
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("matches")
-    .update({ video_url: videoUrl || null })
-    .eq("id", matchId)
-    .select("id");
-  if (error || !data?.length) {
+  const { error } = await supabase.from("match_videos").insert({
+    match_id: matchId,
+    team_id: team.id,
+    quarter: parsed.data.quarter ?? null,
+    title: parsed.data.title ?? null,
+    url: parsed.data.url,
+    created_by: userId,
+  });
+  if (error) {
     redirect(
-      `/matches/${matchId}?error=${encodeURIComponent(`更新できませんでした(権限がない可能性があります)`)}`
+      `${back}?error=${encodeURIComponent(`動画を追加できませんでした(権限がない可能性があります)`)}`
     );
   }
-  revalidatePath(`/matches/${matchId}`);
-  redirect(`/matches/${matchId}`);
+  revalidatePath(back);
+  redirect(back);
+}
+
+export async function deleteMatchVideo(formData: FormData) {
+  await requireMembership();
+  const matchId = String(formData.get("match_id"));
+  const videoId = String(formData.get("video_id"));
+  const back = `/matches/${matchId}`;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("match_videos")
+    .delete()
+    .eq("id", videoId);
+  if (error) {
+    redirect(
+      `${back}?error=${encodeURIComponent("動画を削除できませんでした(権限がない可能性があります)")}`
+    );
+  }
+  revalidatePath(back);
+  redirect(back);
 }
 
 // クリップ作成 + タグ付け + 最初のコメントを1回のsubmitで完了させる(90秒UX)
@@ -152,10 +174,29 @@ export async function createClip(formData: FormData) {
   }
 
   const supabase = await createClient();
+
+  // 紐づける動画(任意)。時間はこの動画内のオフセットを指す。
+  // クオーターは動画側の設定を引き継ぐ。
+  const videoId = String(formData.get("video_id") ?? "").trim();
+  let videoFields: Partial<{ video_id: string; quarter: number | null }> = {};
+  if (videoId) {
+    const { data: video } = await supabase
+      .from("match_videos")
+      .select("id, quarter")
+      .eq("id", videoId)
+      .eq("match_id", matchId)
+      .maybeSingle();
+    if (!video) {
+      redirect(`${back}?error=${encodeURIComponent("選択された動画が見つかりません")}`);
+    }
+    videoFields = { video_id: video.id, quarter: video.quarter };
+  }
+
   const { data: clip, error } = await supabase
     .from("video_clips")
     .insert({
       ...parsed.data,
+      ...videoFields,
       match_id: matchId,
       team_id: team.id,
       created_by: userId,

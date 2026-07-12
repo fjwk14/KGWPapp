@@ -13,11 +13,12 @@ import {
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
-import { buildTimestampUrl, formatSeconds } from "@/lib/video";
+import { buildTimestampUrl, formatSeconds, matchVideoLabel } from "@/lib/video";
 import type {
   ClipComment,
   ClipTag,
   Match,
+  MatchVideo,
   TagTemplate,
   VideoClip,
 } from "@/lib/types";
@@ -62,6 +63,19 @@ export default async function ClipDetailPage({
     ]);
 
   const match = matchData as Match;
+
+  // 紐づいた動画(なければ旧video_urlへフォールバック)
+  let video: MatchVideo | null = null;
+  if (clip.video_id) {
+    const { data: videoData } = await supabase
+      .from("match_videos")
+      .select("*")
+      .eq("id", clip.video_id)
+      .maybeSingle();
+    video = (videoData as MatchVideo | null) ?? null;
+  }
+  const videoUrl = video?.url ?? match.video_url;
+
   const tags = (tagsData ?? []) as ClipTag[];
   const comments = (commentsData ?? []) as (ClipComment & {
     users: { name: string } | null;
@@ -97,16 +111,16 @@ export default async function ClipDetailPage({
           )}
         </div>
         <p className="text-sm text-slate-500">
-          {clip.quarter ? `Q${clip.quarter} / ` : ""}
+          {video ? `${matchVideoLabel(video)} / ` : clip.quarter === 5 ? "PSO / " : clip.quarter ? `Q${clip.quarter} / ` : ""}
           {formatSeconds(clip.start_time_seconds)}〜
           {formatSeconds(clip.end_time_seconds)}
         </p>
         {clip.description && (
           <p className="text-sm text-slate-600">{clip.description}</p>
         )}
-        {match.video_url ? (
+        {videoUrl ? (
           <a
-            href={buildTimestampUrl(match.video_url, clip.start_time_seconds)}
+            href={buildTimestampUrl(videoUrl, clip.start_time_seconds)}
             target="_blank"
             rel="noreferrer"
             className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
@@ -115,7 +129,8 @@ export default async function ClipDetailPage({
           </a>
         ) : (
           <p className="text-xs text-slate-400">
-            試合に動画URLを登録すると該当場面へのリンクが表示されます
+            試合詳細の「試合動画」に動画を追加し、クリップ編集でその動画に
+            紐づけると該当場面へのリンクが表示されます
           </p>
         )}
       </Card>

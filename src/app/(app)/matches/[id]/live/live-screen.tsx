@@ -7,6 +7,7 @@
 // - Undo: 未同期ならキューから取り消し、同期済みならDELETEをキューに積む
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -77,6 +78,7 @@ export default function LiveScreen({
   initialEvents,
 }: Props) {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
 
   const [roster, setRoster] = useState<RosterEntry[]>(initialRoster);
   const [editingRoster, setEditingRoster] = useState(initialRoster.length === 0);
@@ -158,6 +160,8 @@ export default function LiveScreen({
         if (error) throw error;
       }
       setOps((prev) => prev.filter((o) => !snapshot.includes(o)));
+      // 直後に同期状態を参照する処理(試合終了)のためrefも即時更新する
+      opsRef.current = opsRef.current.filter((o) => !snapshot.includes(o));
     } catch {
       // オフライン/一時エラー: キューに残して次回再試行
     } finally {
@@ -247,6 +251,56 @@ export default function LiveScreen({
     const last = events[events.length - 1];
     if (last) removeEvent(last.id);
   }, [events, removeEvent]);
+
+  // 試合終了: 未同期分を送ってから、スコアと勝敗を試合情報に反映する。
+  // 動画は後日でよい(このボタンで当日の記録作業は完結する)
+  const [finishing, setFinishing] = useState(false);
+  const finishMatch = useCallback(async () => {
+    let forGoals = 0;
+    let against = 0;
+    for (const e of events) {
+      if (e.type === "shot" && e.result === "goal") forGoals += 1;
+      if (e.type === "gk_faced" && e.result === "goal_against") against += 1;
+      if (e.type === "opponent_goal") against += 1;
+    }
+    if (
+      !window.confirm(
+        `試合終了として ${forGoals} - ${against} を試合情報に反映します。よろしいですか?`
+      )
+    ) {
+      return;
+    }
+    setFinishing(true);
+    try {
+      // 進行中のflushと競合しても取りこぼさないよう数回試す
+      for (let i = 0; i < 3 && opsRef.current.length > 0; i++) {
+        await flush();
+        if (opsRef.current.length > 0) {
+          await new Promise((r) => setTimeout(r, 400));
+        }
+      }
+      if (opsRef.current.length > 0) {
+        window.alert(
+          "未同期の記録があります。電波のある場所でこの画面を開き直してから、もう一度お試しください(記録は端末に保存されています)。"
+        );
+        return;
+      }
+      const result =
+        forGoals > against ? "win" : forGoals < against ? "lose" : "draw";
+      const { error } = await supabase
+        .from("matches")
+        .update({ score_for: forGoals, score_against: against, result })
+        .eq("id", matchId);
+      if (error) throw error;
+      router.push(`/matches/${matchId}/scoresheet`);
+    } catch {
+      window.alert(
+        "スコアを反映できませんでした(オフラインの可能性があります)。あとで試合詳細の「編集」からも設定できます。"
+      );
+    } finally {
+      setFinishing(false);
+    }
+  }, [events, flush, supabase, matchId, router]);
 
   // ---------- 派生値 ----------
 
@@ -429,6 +483,16 @@ export default function LiveScreen({
           イベントログ({events.length})
         </button>
       </div>
+
+      {/* 試合終了: スコア・勝敗を試合情報に反映(動画は後日でOK) */}
+      <button
+        onClick={finishMatch}
+        disabled={finishing}
+        data-testid="finish-match"
+        className="min-h-11 w-full rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-700 disabled:opacity-50"
+      >
+        {finishing ? "反映中..." : "🏁 試合終了(スコアを試合情報に反映)"}
+      </button>
 
       {/* アクションパネル(選手選択時) */}
       {selected && (

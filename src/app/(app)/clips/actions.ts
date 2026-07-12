@@ -30,6 +30,28 @@ export async function updateClip(formData: FormData) {
   }
 
   const supabase = await createClient();
+
+  // 紐づける動画の変更(任意)。空文字は「紐づけ解除」。
+  const rawVideoId = formData.get("video_id");
+  let videoPatch: Partial<{ video_id: string | null; quarter: number | null }> =
+    {};
+  if (rawVideoId != null) {
+    const videoId = String(rawVideoId).trim();
+    if (videoId === "") {
+      videoPatch = { video_id: null, quarter: null };
+    } else {
+      const { data: video } = await supabase
+        .from("match_videos")
+        .select("id, quarter")
+        .eq("id", videoId)
+        .maybeSingle();
+      if (!video) {
+        redirect(`${back}?error=${encodeURIComponent("選択された動画が見つかりません")}`);
+      }
+      videoPatch = { video_id: video.id, quarter: video.quarter };
+    }
+  }
+
   const { data, error } = await supabase
     .from("video_clips")
     .update({
@@ -37,6 +59,7 @@ export async function updateClip(formData: FormData) {
       start_time_seconds: parsed.data.start_time_seconds,
       end_time_seconds: parsed.data.end_time_seconds,
       description: parsed.data.description ?? null,
+      ...videoPatch,
     })
     .eq("id", clipId)
     .select("id");

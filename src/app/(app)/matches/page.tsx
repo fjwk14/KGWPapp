@@ -11,11 +11,26 @@ export default async function MatchesPage() {
 
   const { data } = await supabase
     .from("matches")
-    .select("id, title, opponent, match_date, competition, result, score_for, score_against, video_url")
+    .select("id, title, opponent, match_date, competition, result, score_for, score_against")
     .eq("team_id", team.id)
     .order("match_date", { ascending: false, nullsFirst: false });
 
   const matches = (data ?? []) as Match[];
+
+  // 動画は後日添付されるため match_videos 側を数える
+  const videoCounts = new Map<string, number>();
+  if (matches.length > 0) {
+    const { data: videos } = await supabase
+      .from("match_videos")
+      .select("match_id")
+      .in(
+        "match_id",
+        matches.map((m) => m.id)
+      );
+    for (const v of (videos ?? []) as { match_id: string }[]) {
+      videoCounts.set(v.match_id, (videoCounts.get(v.match_id) ?? 0) + 1);
+    }
+  }
 
   return (
     <>
@@ -43,10 +58,12 @@ export default async function MatchesPage() {
                 {m.competition ? ` / ${m.competition}` : ""}
               </div>
               <div className="mt-1 text-xs">
-                {m.video_url ? (
-                  <span className="text-emerald-600">🎥 動画あり</span>
+                {(videoCounts.get(m.id) ?? 0) > 0 ? (
+                  <span className="text-emerald-600">
+                    🎥 動画{videoCounts.get(m.id)}本
+                  </span>
                 ) : (
-                  <span className="text-slate-400">動画未登録</span>
+                  <span className="text-slate-400">動画は後日添付できます</span>
                 )}
               </div>
             </div>

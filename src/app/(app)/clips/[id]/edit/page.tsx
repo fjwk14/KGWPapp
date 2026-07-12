@@ -6,12 +6,14 @@ import {
   ErrorBanner,
   Input,
   Label,
+  Select,
   Textarea,
 } from "@/components/ui";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
-import type { VideoClip } from "@/lib/types";
+import { matchVideoLabel } from "@/lib/video";
+import type { MatchVideo, VideoClip } from "@/lib/types";
 import { updateClip } from "../../actions";
 
 export default async function EditClipPage({
@@ -35,6 +37,14 @@ export default async function EditClipPage({
   if (!clip) notFound();
   const c = clip as VideoClip;
 
+  const { data: videosData } = await supabase
+    .from("match_videos")
+    .select("*")
+    .eq("match_id", c.match_id)
+    .order("quarter", { nullsFirst: false })
+    .order("created_at");
+  const videos = (videosData ?? []) as MatchVideo[];
+
   const startMin = Math.floor(c.start_time_seconds / 60);
   const startSec = c.start_time_seconds % 60;
   const endMin = Math.floor(c.end_time_seconds / 60);
@@ -55,6 +65,20 @@ export default async function EditClipPage({
             <Label htmlFor="title">場面タイトル *</Label>
             <Input id="title" name="title" required defaultValue={c.title} />
           </div>
+
+          {videos.length > 0 && (
+            <div>
+              <Label htmlFor="video_id">対象の動画</Label>
+              <Select id="video_id" name="video_id" defaultValue={c.video_id ?? ""}>
+                {videos.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {matchVideoLabel(v)}
+                  </option>
+                ))}
+                <option value="">紐づけない</option>
+              </Select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
