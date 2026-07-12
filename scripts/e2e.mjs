@@ -92,9 +92,10 @@ try {
     await page.click("text=+ クリップ作成");
     await page.waitForURL("**/clips/new");
     await page.fill("#title", "Q2 カウンター失点");
-    await page.fill("#start_time_seconds", "615");
-    await page.fill("#end_time_seconds", "645");
-    await page.selectOption("#quarter", "2");
+    await page.fill('[name="start_min"]', "10");
+    await page.fill('[name="start_sec"]', "15");
+    await page.fill('[name="end_min"]', "10");
+    await page.fill('[name="end_sec"]', "45");
     await page.fill("#description", "戻りが遅れて2対1を作られた");
     // タグチップを選択(action:カウンター / cause:戻り遅れ / result:失点)
     await page.click('label:has(input[value="action:カウンター"])');
@@ -133,8 +134,10 @@ try {
     await page.waitForURL(/\/matches\/[0-9a-f-]+$/);
     await page.click("text=+ クリップ作成");
     await page.fill("#title", "Q3 6対5で得点");
-    await page.fill("#start_time_seconds", "1280");
-    await page.fill("#end_time_seconds", "1310");
+    await page.fill('[name="start_min"]', "21");
+    await page.fill('[name="start_sec"]', "20");
+    await page.fill('[name="end_min"]', "21");
+    await page.fill('[name="end_sec"]', "50");
     await page.click('label:has(input[value="phase:6対5"])');
     await page.click('label:has(input[value="result:得点"])');
     await page.click('label:has(input[value="action:シュート"])');
@@ -241,10 +244,10 @@ try {
 
   await step("管理画面: タグテンプレート追加", async () => {
     await page.goto(`${BASE}/admin/tags`);
-    await page.selectOption('select[name="tag_type"]', "tactic");
-    await page.fill('input[name="tag_value"]', "ハイプレス");
-    await page.click('form:has(input[name="tag_value"]) button:has-text("追加")');
-    await page.waitForSelector("text=ハイプレス");
+    await page.selectOption("#new_tag_type", "tactic");
+    await page.fill("#new_tag_value", "ハイプレス");
+    await page.click('form:has(#new_tag_value) button:has-text("追加")');
+    await page.waitForSelector('input[value="ハイプレス"]');
   });
 
   await step("ログアウト → 未認証リダイレクト", async () => {

@@ -269,6 +269,121 @@ describe.skipIf(!DATABASE_URL)("RLS統合テスト(実PostgreSQL)", () => {
     });
   });
 
+  describe("スタッツ(stats_events / match_rosters)", () => {
+    const MANAGER = "66666666-6666-6666-6666-666666666666";
+
+    beforeAll(async () => {
+      // マネージャーをTEAM_Aに用意(既存テストと共用)
+      await db.query(`
+        insert into auth.users (id, email, raw_user_meta_data)
+        values ('${MANAGER}', 'manager@example.com', '{"name":"マネージャー"}')
+        on conflict (id) do nothing`);
+      await db.query(`
+        insert into public.users (id, email, name)
+        values ('${MANAGER}', 'manager@example.com', 'マネージャー')
+        on conflict (id) do nothing`);
+      await db.query(`
+        insert into public.memberships (team_id, user_id, role, status)
+        values ('${TEAM_A}', '${MANAGER}', 'manager', 'active')
+        on conflict (team_id, user_id) do update set role = 'manager', status = 'active'`);
+    });
+
+    it("マネージャーはスタッツイベントを記録できる", async () => {
+      await asUser(MANAGER, async (q) => {
+        const res = await q(
+          `insert into stats_events (team_id, match_id, quarter, player_id, type, subtype, result)
+           values ($1, $2, 1, $3, 'shot', 'center', 'goal') returning id, team_id`,
+          [TEAM_A, MATCH_A, PLAYER]
+        );
+        expect(res.rowCount).toBe(1);
+      });
+    });
+
+    it("選手・戦術班はスタッツを記録できない(閲覧は可)", async () => {
+      for (const uid of [PLAYER, STAFF]) {
+        await asUser(uid, async (q) => {
+          await expect(
+            q(
+              `insert into stats_events (team_id, match_id, quarter, player_id, type)
+               values ($1, $2, 1, $3, 'assist')`,
+              [TEAM_A, MATCH_A, PLAYER]
+            )
+          ).rejects.toThrow(/row-level security/);
+        });
+        // 閲覧はできる(別トランザクションで確認)
+        await asUser(uid, async (q) => {
+          await q("select id from stats_events where match_id = $1", [MATCH_A]);
+        });
+      }
+    });
+
+    it("部外者には他チームのスタッツが見えない", async () => {
+      await db.query(`
+        insert into public.stats_events (team_id, match_id, quarter, player_id, type)
+        values ('${TEAM_A}', '${MATCH_A}', 1, '${PLAYER}', 'cut')`);
+      await asUser(OUTSIDER, async (q) => {
+        expect(
+          (await q("select id from stats_events where team_id = $1", [TEAM_A])).rowCount
+        ).toBe(0);
+      });
+    });
+
+    it("CHECK制約: 不正なsubtypeは拒否", async () => {
+      await asUser(MANAGER, async (q) => {
+        await expect(
+          q(
+            `insert into stats_events (team_id, match_id, quarter, player_id, type, subtype, result)
+             values ($1, $2, 1, $3, 'shot', 'invalid', 'goal')`,
+            [TEAM_A, MATCH_A, PLAYER]
+          )
+        ).rejects.toThrow(/check constraint/);
+      });
+    });
+
+    it("CHECK制約: チームイベントへのplayer_id指定は拒否", async () => {
+      await asUser(MANAGER, async (q) => {
+        await expect(
+          q(
+            `insert into stats_events (team_id, match_id, quarter, player_id, type)
+             values ($1, $2, 1, $3, 'opponent_goal')`,
+            [TEAM_A, MATCH_A, PLAYER]
+          )
+        ).rejects.toThrow(/check constraint/);
+      });
+    });
+
+    it("team_id偽装はトリガーで矯正される", async () => {
+      await asUser(MANAGER, async (q) => {
+        const res = await q(
+          `insert into stats_events (team_id, match_id, quarter, player_id, type)
+           values ($1, $2, 1, $3, 'assist') returning team_id`,
+          [TEAM_B, MATCH_A, PLAYER]
+        );
+        expect(res.rows[0]?.team_id).toBe(TEAM_A);
+      });
+    });
+
+    it("出場メンバー登録はマネージャー可・選手不可", async () => {
+      await asUser(MANAGER, async (q) => {
+        const res = await q(
+          `insert into match_rosters (team_id, match_id, user_id, cap_number, is_gk)
+           values ($1, $2, $3, 2, false) returning id`,
+          [TEAM_A, MATCH_A, PLAYER]
+        );
+        expect(res.rowCount).toBe(1);
+      });
+      await asUser(PLAYER, async (q) => {
+        await expect(
+          q(
+            `insert into match_rosters (team_id, match_id, user_id, cap_number, is_gk)
+             values ($1, $2, $3, 3, false)`,
+            [TEAM_A, MATCH_A, PLAYER]
+          )
+        ).rejects.toThrow(/row-level security/);
+      });
+    });
+  });
+
   describe("RPCと整合性ガード", () => {
     it("add_member_by_emailは非adminには拒否される", async () => {
       await asUser(STAFF, async (q) => {

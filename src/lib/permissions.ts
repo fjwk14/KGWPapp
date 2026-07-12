@@ -26,6 +26,9 @@ export const can = {
 
   editReport: (role: Role) => LEADER_ROLES.includes(role),
 
+  // リアルタイムスタッツの記録・編集(RLS側も同じ制限)
+  recordStats: (role: Role) => role === "manager" || role === "admin",
+
   manageTeam: (role: Role) => role === "admin",
   manageMembers: (role: Role) => role === "admin",
   manageTagTemplates: (role: Role) => role === "admin",

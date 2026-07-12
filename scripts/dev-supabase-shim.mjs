@@ -243,6 +243,22 @@ async function readBody(req) {
 // ---------- HTTP server ----------
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
+
+  // ブラウザからの直接アクセス(リアルタイム入力の同期)向けCORS。
+  // アプリ(:3100)とはオリジンが異なるためプリフライトに応答する。
+  res.setHeader("access-control-allow-origin", req.headers.origin ?? "*");
+  res.setHeader("access-control-allow-credentials", "true");
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, {
+      "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
+      "access-control-allow-headers":
+        req.headers["access-control-request-headers"] ??
+        "authorization, apikey, content-type, prefer, x-client-info",
+      "access-control-max-age": "86400",
+    });
+    return res.end();
+  }
+
   const auth = req.headers.authorization?.replace(/^Bearer\s+/i, "");
   const claims = auth ? verifyJwt(auth) : null;
 
@@ -362,6 +378,27 @@ const server = createServer(async (req, res) => {
             });
             return `(${ph.join(", ")})`;
           });
+          // upsert対応: ?on_conflict= + Prefer: resolution=...
+          // (オフライン同期の冪等再送 ignoreDuplicates が使う)
+          let conflictSql = "";
+          const onConflict = url.searchParams.get("on_conflict");
+          if (onConflict) {
+            const ccols = onConflict.split(",").map((s) => s.trim());
+            for (const c of ccols) {
+              if (!IDENT.test(c)) throw new Error(`bad on_conflict column: ${c}`);
+            }
+            const target = `(${ccols.map((c) => `"${c}"`).join(", ")})`;
+            if (prefer.includes("resolution=ignore-duplicates")) {
+              conflictSql = `on conflict ${target} do nothing`;
+            } else if (prefer.includes("resolution=merge-duplicates")) {
+              const updatable = cols.filter((c) => !ccols.includes(c));
+              conflictSql = updatable.length
+                ? `on conflict ${target} do update set ${updatable
+                    .map((c) => `"${c}" = excluded."${c}"`)
+                    .join(", ")}`
+                : `on conflict ${target} do nothing`;
+            }
+          }
           // RETURNINGはSELECTポリシーの対象になるため、実PostgREST同様に
           // representation要求時のみ付ける(例: AFTERトリガーで membership を
           // 作るteams insertは、RETURNINGがあると可視性チェックで落ちる)
@@ -369,7 +406,7 @@ const server = createServer(async (req, res) => {
           rows = await withRls(claims, async (client) => {
             const { rows } = await client.query(
               `insert into public."${table}" (${cols.map((c) => `"${c}"`).join(", ")})
-               values ${tuples.join(", ")} ${returning}`,
+               values ${tuples.join(", ")} ${conflictSql} ${returning}`,
               params
             );
             return resolveEmbeds(client, rows, embeds);

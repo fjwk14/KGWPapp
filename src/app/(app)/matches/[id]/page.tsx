@@ -123,6 +123,14 @@ export default async function MatchDetailPage({
         <LinkButton href={`/matches/${m.id}/report`} className="bg-emerald-600 hover:bg-emerald-700">
           🤖 AIレポート
         </LinkButton>
+        <LinkButton href={`/matches/${m.id}/scoresheet`} className="bg-indigo-600 hover:bg-indigo-700">
+          📈 スタッツ表
+        </LinkButton>
+        {can.recordStats(membership.role) && (
+          <LinkButton href={`/matches/${m.id}/live`} className="bg-rose-600 hover:bg-rose-700">
+            ⏱ リアルタイム入力
+          </LinkButton>
+        )}
       </div>
 
       <section className="space-y-2">
