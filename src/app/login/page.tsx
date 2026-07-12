@@ -27,6 +27,23 @@ export default async function LoginPage({
               <Input id="name" name="name" required placeholder="表示名" />
             </div>
           )}
+          {isSignUp && (
+            <div>
+              <Label htmlFor="invite_code">招待コード(任意)</Label>
+              <Input
+                id="invite_code"
+                name="invite_code"
+                placeholder="例: ABC123"
+                autoCapitalize="characters"
+                autoComplete="off"
+                className="uppercase"
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                部のコードを入れると、登録と同時にそのチームに参加できます
+                (後からでも参加できます)。
+              </p>
+            </div>
+          )}
           <div>
             <Label htmlFor="email">メールアドレス</Label>
             <Input

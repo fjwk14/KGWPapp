@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { can, ROLE_LABELS } from "@/lib/permissions";
 import type { Membership, Profile, Role } from "@/lib/types";
 import { addMember, updateMember } from "./actions";
+import InviteCodeCard from "./invite-code-card";
 
 const STATUS_LABELS: Record<string, string> = {
   active: "在籍",
@@ -50,10 +51,15 @@ export default async function AdminPage({
       </div>
       <ErrorBanner message={error} />
 
+      <InviteCodeCard code={team.invite_code} />
+
       <Card className="space-y-3">
-        <h2 className="text-sm font-semibold text-slate-600">メンバー追加</h2>
+        <h2 className="text-sm font-semibold text-slate-600">
+          メンバーを個別に追加(メール)
+        </h2>
         <p className="text-xs text-slate-400">
-          追加したい部員に先にサインアップしてもらい、そのメールアドレスを入力してください。
+          招待コードを使わない場合はこちら。追加したい部員に先にサインアップしてもらい、
+          そのメールアドレスを入力してください。
         </p>
         <form action={addMember} className="space-y-2">
           <Input

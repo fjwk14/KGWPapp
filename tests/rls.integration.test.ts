@@ -445,6 +445,86 @@ describe.skipIf(!DATABASE_URL)("RLS統合テスト(実PostgreSQL)", () => {
     });
   });
 
+  describe("招待コード(join_team_by_code)", () => {
+    // チームBに参加していない新規ユーザー
+    const NEWBIE = "77777777-7777-7777-7777-777777777777";
+
+    beforeAll(async () => {
+      await db.query(`
+        insert into auth.users (id, email, raw_user_meta_data)
+        values ('${NEWBIE}', 'newbie@example.com', '{"name":"新入部員"}')
+        on conflict (id) do nothing`);
+      await db.query(`
+        insert into public.users (id, email, name)
+        values ('${NEWBIE}', 'newbie@example.com', '新入部員')
+        on conflict (id) do nothing`);
+    });
+
+    it("正しい招待コードで選手として参加できる", async () => {
+      const { rows } = await db.query(
+        `select invite_code from public.teams where id = $1`,
+        [TEAM_A]
+      );
+      const code = rows[0].invite_code as string;
+      await asUser(NEWBIE, async (q) => {
+        const res = await q("select join_team_by_code($1) as team_id", [code]);
+        expect(res.rows[0].team_id).toBe(TEAM_A);
+        const m = await q(
+          "select role, status from memberships where team_id = $1 and user_id = $2",
+          [TEAM_A, NEWBIE]
+        );
+        expect(m.rows[0]).toMatchObject({ role: "player", status: "active" });
+      });
+    });
+
+    it("小文字・前後空白でも参加できる(大文字化とtrim)", async () => {
+      const { rows } = await db.query(
+        `select invite_code from public.teams where id = $1`,
+        [TEAM_A]
+      );
+      const code = rows[0].invite_code as string;
+      await asUser(NEWBIE, async (q) => {
+        const res = await q("select join_team_by_code($1) as team_id", [
+          `  ${code.toLowerCase()}  `,
+        ]);
+        expect(res.rows[0].team_id).toBe(TEAM_A);
+      });
+    });
+
+    it("不正なコードは拒否される", async () => {
+      await asUser(NEWBIE, async (q) => {
+        await expect(
+          q("select join_team_by_code($1)", ["ZZZZZZ"])
+        ).rejects.toThrow(/invalid invite code/);
+      });
+    });
+
+    it("管理者はコードを再発行でき、古いコードは無効になる", async () => {
+      await asUser(ADMIN, async (q) => {
+        const before = await q(
+          "select invite_code from teams where id = $1",
+          [TEAM_A]
+        );
+        const oldCode = before.rows[0].invite_code as string;
+        const res = await q("select regenerate_invite_code($1) as code", [TEAM_A]);
+        const newCode = res.rows[0].code as string;
+        expect(newCode).not.toBe(oldCode);
+        const after = await q("select invite_code from teams where id = $1", [
+          TEAM_A,
+        ]);
+        expect(after.rows[0].invite_code).toBe(newCode);
+      });
+    });
+
+    it("管理者以外はコードを再発行できない", async () => {
+      await asUser(PLAYER, async (q) => {
+        await expect(
+          q("select regenerate_invite_code($1)", [TEAM_A])
+        ).rejects.toThrow(/permission denied/);
+      });
+    });
+  });
+
   describe("試合動画(match_videos)", () => {
     const MANAGER = "66666666-6666-6666-6666-666666666666";
 

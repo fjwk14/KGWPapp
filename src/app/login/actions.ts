@@ -30,6 +30,7 @@ export async function signIn(formData: FormData) {
 export async function signUp(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) fail("名前を入力してください");
+  const inviteCode = String(formData.get("invite_code") ?? "").trim();
 
   const parsed = credentialsSchema.safeParse({
     email: formData.get("email"),
@@ -47,9 +48,25 @@ export async function signUp(formData: FormData) {
 
   // メール確認が有効な場合はセッションが張られないため案内を出す
   if (!data.session) {
+    const suffix = inviteCode
+      ? "その後、ログインして招待コードを入力すればチームに参加できます。"
+      : "";
     redirect(
-      `/login?error=${encodeURIComponent("確認メールを送信しました。メール内のリンクを開いてからログインしてください。")}`
+      `/login?error=${encodeURIComponent(`確認メールを送信しました。メール内のリンクを開いてからログインしてください。${suffix}`)}`
     );
+  }
+
+  // 招待コードがあれば自動でチームに参加(選手として)
+  if (inviteCode) {
+    const { error: joinError } = await supabase.rpc("join_team_by_code", {
+      p_code: inviteCode,
+    });
+    if (joinError) {
+      // アカウントは作成済み。オンボーディングでコードを入れ直してもらう
+      redirect(
+        `/onboarding?error=${encodeURIComponent("招待コードが正しくありません。コードを確認してもう一度入力してください。")}`
+      );
+    }
   }
 
   redirect("/dashboard");

@@ -42,7 +42,7 @@ export const requireMembership = cache(async (): Promise<SessionContext> => {
 
   const { data: team } = await supabase
     .from("teams")
-    .select("id, name, slug, sport, logo_url, primary_color")
+    .select("id, name, slug, sport, logo_url, primary_color, invite_code")
     .eq("id", membership.team_id)
     .single();
 

@@ -47,6 +47,17 @@ export async function addMember(formData: FormData) {
   backTo("/admin");
 }
 
+export async function regenerateInviteCode() {
+  const { team } = await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("regenerate_invite_code", {
+    p_team_id: team.id,
+  });
+  if (error) backTo("/admin", "招待コードの再発行に失敗しました");
+  revalidatePath("/admin");
+  backTo("/admin");
+}
+
 export async function updateMember(formData: FormData) {
   const { team } = await requireAdmin();
   const membershipId = String(formData.get("membership_id"));

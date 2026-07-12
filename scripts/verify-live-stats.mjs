@@ -77,9 +77,10 @@ try {
     await page.fill("#password", "password123");
     await page.click('button[type="submit"]');
     await page.waitForURL("**/onboarding");
+    await page.click("summary:has-text('新しくチームを作る')");
     await page.fill("#name", "スタッツ検証部");
     await page.fill("#slug", `st${uniq}`);
-    await page.click('button[type="submit"]');
+    await page.click('button:has-text("チームを作成")');
     await page.waitForURL("**/dashboard");
   });
 

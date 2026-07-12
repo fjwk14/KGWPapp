@@ -30,6 +30,7 @@ export interface Team {
   sport: string;
   logo_url: string | null;
   primary_color: string | null;
+  invite_code: string;
 }
 
 export interface Membership {

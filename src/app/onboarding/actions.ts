@@ -4,6 +4,28 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { teamSchema } from "@/lib/validation";
 
+// 招待コードでチームに参加する(選手として)
+export async function joinTeam(formData: FormData) {
+  const code = String(formData.get("invite_code") ?? "").trim();
+  if (!code) {
+    redirect(`/onboarding?error=${encodeURIComponent("招待コードを入力してください")}`);
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { error } = await supabase.rpc("join_team_by_code", { p_code: code });
+  if (error) {
+    redirect(
+      `/onboarding?error=${encodeURIComponent("招待コードが正しくありません。部の管理者にコードを確認してください。")}`
+    );
+  }
+  redirect("/dashboard");
+}
+
 export async function createTeam(formData: FormData) {
   const parsed = teamSchema.safeParse({
     name: formData.get("name"),

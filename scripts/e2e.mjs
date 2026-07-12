@@ -52,9 +52,10 @@ try {
   });
 
   await step("チーム作成 → ダッシュボード", async () => {
+    await page.click("summary:has-text('新しくチームを作る')");
     await page.fill("#name", "E2Eテストチーム");
     await page.fill("#slug", `e2e-team-${stamp}`);
-    await page.click('button[type="submit"]');
+    await page.click('button:has-text("チームを作成")');
     await page.waitForURL("**/dashboard");
     if (!(await page.textContent("body")).includes("E2Eテストチーム")) {
       throw new Error("チーム名がヘッダーに表示されない");
