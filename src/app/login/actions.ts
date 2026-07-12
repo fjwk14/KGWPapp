@@ -13,6 +13,25 @@ function fail(message: string): never {
   redirect(`/login?error=${encodeURIComponent(message)}`);
 }
 
+function failSignup(message: string): never {
+  redirect(`/login?mode=signup&error=${encodeURIComponent(message)}`);
+}
+
+// Supabaseの英語エラーを、部員にも分かる日本語に変換する
+function friendlySignupError(raw: string): string {
+  const m = raw.toLowerCase();
+  if (m.includes("already registered") || m.includes("already been registered")) {
+    return "このメールアドレスは既に登録済みです。新規登録は不要です。このままメールアドレスとパスワードを入力してログインしてください。";
+  }
+  if (m.includes("you can only request this after") || m.includes("rate limit")) {
+    return "短い時間に試しすぎました。30秒ほど待ってから、もう一度お試しください。";
+  }
+  if (m.includes("password")) {
+    return "パスワードは8文字以上にしてください。";
+  }
+  return `サインアップに失敗しました: ${raw}`;
+}
+
 export async function signIn(formData: FormData) {
   const parsed = credentialsSchema.safeParse({
     email: formData.get("email"),
@@ -29,14 +48,14 @@ export async function signIn(formData: FormData) {
 
 export async function signUp(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
-  if (!name) fail("名前を入力してください");
+  if (!name) failSignup("名前を入力してください");
   const inviteCode = String(formData.get("invite_code") ?? "").trim();
 
   const parsed = credentialsSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
   });
-  if (!parsed.success) fail(parsed.error.issues[0].message);
+  if (!parsed.success) failSignup(parsed.error.issues[0].message);
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -44,7 +63,12 @@ export async function signUp(formData: FormData) {
     password: parsed.data.password,
     options: { data: { name } },
   });
-  if (error) fail(`サインアップに失敗しました: ${error.message}`);
+  if (error) {
+    const message = friendlySignupError(error.message);
+    // 「登録済み」はログインすべきなので、ログイン画面へ誘導する
+    if (error.message.toLowerCase().includes("already")) fail(message);
+    failSignup(message);
+  }
 
   // メール確認が有効な場合はセッションが張られないため案内を出す
   if (!data.session) {

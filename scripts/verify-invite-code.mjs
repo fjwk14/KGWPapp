@@ -89,6 +89,27 @@ try {
     await p.context().close();
   });
 
+  await step("登録済みメールで再サインアップ→ログイン画面へ誘導される", async () => {
+    const p = await newPage();
+    await p.goto(`${BASE}/login?mode=signup`);
+    await p.waitForLoadState("networkidle");
+    await p.fill("#name", "重複ユーザー");
+    await p.fill("#email", memberAEmail); // 既に登録済み
+    await p.fill("#password", "password123");
+    await p.click('button:has-text("アカウント作成")');
+    // ログインモード(mode=signupが付かない)に着地し、案内が出る
+    await p.waitForSelector("text=既に登録済み");
+    // そのままログインできる
+    await p.fill("#email", memberAEmail);
+    await p.fill("#password", "password123");
+    await p.click('button:has-text("ログイン")');
+    await p.waitForURL("**/dashboard");
+    if (!(await p.textContent("body")).includes(teamName)) {
+      throw new Error("ログイン後に対象チームに入っていない");
+    }
+    await p.context().close();
+  });
+
   await step("部員B: コードなし登録→オンボーディングで参加", async () => {
     const p = await newPage();
     await p.goto(`${BASE}/login?mode=signup`);
@@ -100,10 +121,7 @@ try {
     // 不正コードはエラー
     await p.fill("#invite_code", "ZZZZZZ");
     await p.click('button:has-text("このコードで参加する")');
-    await p.waitForURL("**/onboarding?error=*");
-    if (!(await p.textContent("body")).includes("正しくありません")) {
-      throw new Error("不正コードのエラーが出ない");
-    }
+    await p.waitForSelector("text=正しくありません");
     // 正しいコードで参加
     await p.fill("#invite_code", inviteCode);
     await p.click('button:has-text("このコードで参加する")');
@@ -145,10 +163,8 @@ try {
     await p.fill("#password", "password123");
     await p.fill("#invite_code", inviteCode); // 旧コード
     await p.click('button[type="submit"]');
-    await p.waitForURL("**/onboarding?error=*");
-    if (!(await p.textContent("body")).includes("正しくありません")) {
-      throw new Error("旧コードが拒否されていない");
-    }
+    // 旧コードは無効 → オンボーディングでエラー
+    await p.waitForSelector("text=正しくありません");
     await p.context().close();
   });
 

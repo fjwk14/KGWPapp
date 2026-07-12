@@ -19,6 +19,33 @@ export default async function LoginPage({
       </div>
 
       <Card className="space-y-4">
+        <div className="flex rounded-lg bg-slate-100 p-0.5 text-sm font-semibold">
+          <a
+            href="/login"
+            className={
+              isSignUp
+                ? "flex-1 rounded-md py-2 text-center text-slate-500"
+                : "flex-1 rounded-md bg-white py-2 text-center text-brand-700 shadow-sm"
+            }
+          >
+            ログイン
+          </a>
+          <a
+            href="/login?mode=signup"
+            className={
+              isSignUp
+                ? "flex-1 rounded-md bg-white py-2 text-center text-brand-700 shadow-sm"
+                : "flex-1 rounded-md py-2 text-center text-slate-500"
+            }
+          >
+            新規登録
+          </a>
+        </div>
+        <p className="text-sm text-slate-500">
+          {isSignUp
+            ? "はじめての方はこちら。登録済みの方は「ログイン」を選んでください。"
+            : "登録済みの方はメールアドレスとパスワードでログインしてください。"}
+        </p>
         <ErrorBanner message={params.error} />
         <form action={isSignUp ? signUp : signIn} className="space-y-4">
           {isSignUp && (
@@ -69,17 +96,6 @@ export default async function LoginPage({
             {isSignUp ? "アカウント作成" : "ログイン"}
           </Button>
         </form>
-        <p className="text-center text-sm text-slate-500">
-          {isSignUp ? (
-            <a href="/login" className="text-brand-600 underline">
-              ログインはこちら
-            </a>
-          ) : (
-            <a href="/login?mode=signup" className="text-brand-600 underline">
-              新規アカウント作成はこちら
-            </a>
-          )}
-        </p>
       </Card>
     </main>
   );
