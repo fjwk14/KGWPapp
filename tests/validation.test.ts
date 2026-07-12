@@ -4,6 +4,7 @@ import {
   clipFormSchema,
   commentSchema,
   matchSchema,
+  parseQuarterScores,
   tagSchema,
   aiReportSchema,
 } from "@/lib/validation";
@@ -224,5 +225,39 @@ describe("aiReportSchema (AI出力のJSON型検証)", () => {
       expect(result.data.title.length).toBe(120);
       expect(result.data.key_problem_patterns.length).toBe(10);
     }
+  });
+});
+
+describe("parseQuarterScores (Q別スコア入力)", () => {
+  it("入力されたQだけをJSONにする", () => {
+    const form: Record<string, string> = {
+      q1_for: "2",
+      q1_against: "1",
+      q3_for: "0",
+      q5_against: "3",
+    };
+    const res = parseQuarterScores((k) => form[k] ?? "");
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.data).toEqual({
+        "1": { for: 2, against: 1 },
+        "3": { for: 0 },
+        "5": { against: 3 },
+      });
+    }
+  });
+
+  it("全欄空ならnull(未記入)を返す", () => {
+    const res = parseQuarterScores(() => "");
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data).toBeNull();
+  });
+
+  it("数値でない・範囲外はエラー", () => {
+    const bad = parseQuarterScores((k) => (k === "q2_for" ? "abc" : ""));
+    expect(bad.ok).toBe(false);
+    const over = parseQuarterScores((k) => (k === "q5_against" ? "100" : ""));
+    expect(over.ok).toBe(false);
+    if (!over.ok) expect(over.message).toContain("PSO");
   });
 });

@@ -258,10 +258,23 @@ export default function LiveScreen({
   const finishMatch = useCallback(async () => {
     let forGoals = 0;
     let against = 0;
+    // Q別スコアも同時に集計して試合情報に記入する(手動修正は編集画面から)
+    const quarterScores: Record<string, { for: number; against: number }> = {};
     for (const e of events) {
-      if (e.type === "shot" && e.result === "goal") forGoals += 1;
-      if (e.type === "gk_faced" && e.result === "goal_against") against += 1;
-      if (e.type === "opponent_goal") against += 1;
+      const q = String(e.quarter);
+      quarterScores[q] ??= { for: 0, against: 0 };
+      if (e.type === "shot" && e.result === "goal") {
+        forGoals += 1;
+        quarterScores[q].for += 1;
+      }
+      if (e.type === "gk_faced" && e.result === "goal_against") {
+        against += 1;
+        quarterScores[q].against += 1;
+      }
+      if (e.type === "opponent_goal") {
+        against += 1;
+        quarterScores[q].against += 1;
+      }
     }
     if (
       !window.confirm(
@@ -289,7 +302,13 @@ export default function LiveScreen({
         forGoals > against ? "win" : forGoals < against ? "lose" : "draw";
       const { error } = await supabase
         .from("matches")
-        .update({ score_for: forGoals, score_against: against, result })
+        .update({
+          score_for: forGoals,
+          score_against: against,
+          result,
+          quarter_scores:
+            Object.keys(quarterScores).length > 0 ? quarterScores : null,
+        })
         .eq("id", matchId);
       if (error) throw error;
       router.push(`/matches/${matchId}/scoresheet`);

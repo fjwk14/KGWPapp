@@ -21,7 +21,7 @@ export default async function NewMatchPage({
     <>
       <h1 className="text-lg font-bold">試合登録</h1>
       <p className="text-sm text-slate-500">
-        試合前に最低限の情報だけ登録すればOK。スコアはスタッツ入力の「試合終了」で
+        試合前に最低限の情報だけ登録すればOK。スコアは試合記録の「試合終了」で
         自動反映、動画は後日共有されてから添付できます。
       </p>
       <Card className="space-y-4">
@@ -32,16 +32,17 @@ export default async function NewMatchPage({
             <Input id="title" name="title" required placeholder="関西学生リーグ 第3戦" />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className="min-w-0">
               <Label htmlFor="opponent">対戦相手</Label>
               <Input id="opponent" name="opponent" placeholder="〇〇大学" />
             </div>
-            <div>
+            <div className="min-w-0">
               <Label htmlFor="match_date">日付</Label>
               <Input
                 id="match_date"
                 name="match_date"
                 type="date"
+                className="appearance-none"
                 defaultValue={new Date().toISOString().slice(0, 10)}
               />
             </div>
@@ -64,7 +65,7 @@ export default async function NewMatchPage({
               value="live"
               className="min-h-12 w-full rounded-lg bg-rose-600 px-4 text-sm font-semibold text-white hover:bg-rose-700"
             >
-              ⏱ 登録してそのままスタッツ入力へ
+              ⏱ 登録してそのまま試合記録へ
             </button>
           )}
         </form>

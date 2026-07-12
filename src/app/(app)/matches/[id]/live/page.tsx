@@ -71,10 +71,10 @@ export default async function LiveStatsPage({
           href={`/matches/${id}/scoresheet`}
           className="text-xs text-brand-600 underline"
         >
-          スタッツ表を見る →
+          記録シートを見る →
         </Link>
       </div>
-      <h1 className="text-lg font-bold">リアルタイム入力</h1>
+      <h1 className="text-lg font-bold">試合記録</h1>
       <LiveScreen
         matchId={id}
         teamId={match.team_id}

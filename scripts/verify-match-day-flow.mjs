@@ -52,7 +52,7 @@ try {
     await page.goto(`${BASE}/matches/new`);
     await page.fill("#title", "当日フロー検証試合");
     await page.fill("#opponent", "Y大学");
-    await page.click('button:has-text("登録してそのままスタッツ入力へ")');
+    await page.click('button:has-text("登録してそのまま試合記録へ")');
     await page.waitForURL(/\/matches\/[0-9a-f-]+\/live$/);
     matchUrl = page.url().replace(/\/live$/, "");
     await page.waitForSelector("text=出場メンバーを選択");
@@ -86,7 +86,23 @@ try {
     const body = (await page.textContent("body")).replace(/\s+/g, " ");
     if (!body.includes("1 - 1")) throw new Error("スコア1-1が試合詳細に出ない");
     if (!body.includes("引き分け")) throw new Error("勝敗(引き分け)が反映されない");
+    if (!body.includes("Q1 1-1")) throw new Error("Q別スコア(Q1 1-1)が反映されない");
     await page.screenshot({ path: `${SHOT}/01-after-finish.png`, fullPage: true });
+  });
+
+  await step("編集画面からQ別スコアを手動修正できる", async () => {
+    await page.click("text=✏️ 編集");
+    await page.waitForURL(/\/matches\/[0-9a-f-]+\/edit$/);
+    // 試合終了で自動記入されたQ1が復元されている
+    const q1for = await page.inputValue('input[name="q1_for"]');
+    if (q1for !== "1") throw new Error(`Q1得点の初期値が1でない: ${q1for}`);
+    // Q2を手動で追記
+    await page.fill('input[name="q2_for"]', "3");
+    await page.fill('input[name="q2_against"]', "2");
+    await page.click('button:has-text("保存する")');
+    await page.waitForURL(/\/matches\/[0-9a-f-]+$/);
+    const body = (await page.textContent("body")).replace(/\s+/g, " ");
+    if (!body.includes("Q2 3-2")) throw new Error("手動のQ2スコアが反映されない");
   });
 
   await step("試合後: Q1動画を後付けできる", async () => {

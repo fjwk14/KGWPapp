@@ -8,6 +8,7 @@ import {
   clipFormSchema,
   matchSchema,
   matchVideoSchema,
+  parseQuarterScores,
   tagSchema,
 } from "@/lib/validation";
 import { can } from "@/lib/permissions";
@@ -73,6 +74,12 @@ export async function updateMatch(formData: FormData) {
     redirect(`${back}?error=${encodeURIComponent(parsed.error.issues[0].message)}`);
   }
 
+  // Q別スコア(任意)。全欄空ならnull(未記入)に戻す
+  const qs = parseQuarterScores((k) => formData.get(k));
+  if (!qs.ok) {
+    redirect(`${back}?error=${encodeURIComponent(qs.message)}`);
+  }
+
   // 空欄になった項目はNULLで明示的にクリアする(undefinedだと未更新扱いになるため)
   // 動画は match_videos で管理するため、ここでは扱わない
   const d = parsed.data;
@@ -84,6 +91,7 @@ export async function updateMatch(formData: FormData) {
     result: d.result ?? null,
     score_for: d.score_for ?? null,
     score_against: d.score_against ?? null,
+    quarter_scores: qs.data,
     notes: d.notes ?? null,
   };
 

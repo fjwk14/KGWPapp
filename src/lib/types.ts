@@ -47,6 +47,11 @@ export interface Profile {
   avatar_url: string | null;
 }
 
+// Q別得失点: キーは "1"〜"4" と "5"(PSO)
+export type QuarterScores = Partial<
+  Record<"1" | "2" | "3" | "4" | "5", { for?: number; against?: number }>
+>;
+
 export interface Match {
   id: string;
   team_id: string;
@@ -57,6 +62,7 @@ export interface Match {
   result: string | null;
   score_for: number | null;
   score_against: number | null;
+  quarter_scores: QuarterScores | null;
   video_url: string | null;
   notes: string | null;
   created_by: string | null;

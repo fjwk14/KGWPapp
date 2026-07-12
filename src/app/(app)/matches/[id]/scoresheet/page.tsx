@@ -74,7 +74,7 @@ export default async function ScoresheetPage({
       <Link href={`/matches/${id}`} className="text-xs text-brand-600 underline">
         ← {match.title}
       </Link>
-      <h1 className="text-lg font-bold">スタッツ表</h1>
+      <h1 className="text-lg font-bold">記録シート</h1>
       <p className="text-sm text-slate-500">
         {match.match_date ?? ""}
         {match.opponent ? ` / vs ${match.opponent}` : ""} / イベント{events.length}件
@@ -82,7 +82,7 @@ export default async function ScoresheetPage({
 
       {events.length === 0 && (
         <Card className="text-sm text-slate-500">
-          まだ記録がありません。「リアルタイム入力」で試合中のスタッツを記録すると、
+          まだ記録がありません。「試合記録をつける」で試合中のプレーを記録すると、
           紙の記録シートと同じ集計表がここに自動生成されます。
         </Card>
       )}
@@ -154,7 +154,7 @@ export default async function ScoresheetPage({
       {/* 選手別テーブル */}
       <Card className="space-y-2">
         <h2 className="text-sm font-semibold text-slate-600">
-          選手スタッツ(ゴール-試投)
+          選手別の記録(ゴール-試投)
         </h2>
         <div className="overflow-x-auto">
           <table className="min-w-[900px] text-center text-xs">
@@ -210,7 +210,7 @@ export default async function ScoresheetPage({
 
       {/* GKテーブル */}
       <Card className="space-y-2">
-        <h2 className="text-sm font-semibold text-slate-600">GKスタッツ</h2>
+        <h2 className="text-sm font-semibold text-slate-600">GKの記録</h2>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[400px] text-center text-sm">
             <thead>

@@ -6,6 +6,7 @@ import type { ClipTag, Match, VideoClip } from "@/lib/types";
 const match: Match = {
   id: "m1",
   team_id: "t1",
+  quarter_scores: null,
   title: "テスト試合",
   opponent: "A大学",
   match_date: "2026-07-01",

@@ -101,8 +101,8 @@ try {
     matchUrl = page.url();
   });
 
-  await step("試合詳細に「リアルタイム入力」ボタン → 出場メンバー選択", async () => {
-    await page.click("text=⏱ リアルタイム入力");
+  await step("試合詳細に「試合記録をつける」ボタン → 出場メンバー選択", async () => {
+    await page.click("text=⏱ 試合記録をつける");
     await page.waitForURL(/\/matches\/[0-9a-f-]+\/live$/);
     await page.waitForSelector("text=出場メンバーを選択");
     // 3人選択: 管理者(#1) / 選手ビー(#2) / キーパーシー(#3→GK)
@@ -246,7 +246,7 @@ try {
 
   await step("スタッツ表: 得点/退水決定率/攻撃効率が紙シート通り", async () => {
     await page.goto(`${matchUrl}/scoresheet`);
-    await page.waitForSelector("text=スタッツ表");
+    await page.waitForSelector("text=記録シート");
     const body = (await page.textContent("body")).replace(/\s+/g, " ");
     // 得点: 自チーム2 - 相手1 (Q1のみ)
     if (!body.includes("イベント9件")) throw new Error("イベント件数が9でない");
@@ -289,18 +289,18 @@ try {
     await p.waitForURL("**/dashboard");
     await p.goto(matchUrl);
     const body = await p.textContent("body");
-    if (body.includes("リアルタイム入力")) {
-      throw new Error("選手にリアルタイム入力ボタンが見えている");
+    if (body.includes("試合記録をつける")) {
+      throw new Error("選手に試合記録ボタンが見えている");
     }
-    if (!body.includes("スタッツ表")) {
-      throw new Error("選手にスタッツ表ボタンが見えない");
+    if (!body.includes("記録シート")) {
+      throw new Error("選手に記録シートボタンが見えない");
     }
     // 直接URLアクセスも試合詳細へリダイレクト
     await p.goto(`${matchUrl}/live`);
     await p.waitForURL(/\/matches\/[0-9a-f-]+$/);
     // スタッツ表は閲覧できる
     await p.goto(`${matchUrl}/scoresheet`);
-    await p.waitForSelector("text=GKスタッツ");
+    await p.waitForSelector("text=GKの記録");
     await c.close();
   });
 

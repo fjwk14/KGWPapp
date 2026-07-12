@@ -93,24 +93,48 @@ export default async function MatchDetailPage({
             </span>
           </p>
         )}
+        {m.quarter_scores && (
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500">
+            {(["1", "2", "3", "4", "5"] as const).map((q) => {
+              const s = m.quarter_scores?.[q];
+              if (!s) return null;
+              return (
+                <span key={q}>
+                  {q === "5" ? "PSO" : `Q${q}`}{" "}
+                  <span className="font-semibold text-slate-700">
+                    {s.for ?? "-"}-{s.against ?? "-"}
+                  </span>
+                </span>
+              );
+            })}
+          </div>
+        )}
         {m.notes && <p className="mt-2 text-sm text-slate-600">{m.notes}</p>}
       </Card>
 
+      {/* 当日: 試合記録 → 後日: 動画・クリップ・分析 の順 */}
       <div className="grid grid-cols-2 gap-2">
+        {can.recordStats(membership.role) && (
+          <LinkButton href={`/matches/${m.id}/live`} className="bg-rose-600 hover:bg-rose-700">
+            ⏱ 試合記録をつける
+          </LinkButton>
+        )}
+        <LinkButton
+          href={`/matches/${m.id}/scoresheet`}
+          className={
+            can.recordStats(membership.role)
+              ? "bg-indigo-600 hover:bg-indigo-700"
+              : "col-span-2 bg-indigo-600 hover:bg-indigo-700"
+          }
+        >
+          📈 記録シート
+        </LinkButton>
         <LinkButton href={`/matches/${m.id}/stats`} className="bg-slate-700 hover:bg-slate-800">
           📊 タグ集計
         </LinkButton>
         <LinkButton href={`/matches/${m.id}/report`} className="bg-emerald-600 hover:bg-emerald-700">
           🤖 AIレポート
         </LinkButton>
-        <LinkButton href={`/matches/${m.id}/scoresheet`} className="bg-indigo-600 hover:bg-indigo-700">
-          📈 スタッツ表
-        </LinkButton>
-        {can.recordStats(membership.role) && (
-          <LinkButton href={`/matches/${m.id}/live`} className="bg-rose-600 hover:bg-rose-700">
-            ⏱ リアルタイム入力
-          </LinkButton>
-        )}
       </div>
 
       {/* 試合動画: 後日共有されてからクオーター単位で添付する */}

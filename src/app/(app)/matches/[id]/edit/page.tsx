@@ -51,16 +51,17 @@ export default async function EditMatchPage({
             <Input id="title" name="title" required defaultValue={m.title} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className="min-w-0">
               <Label htmlFor="opponent">対戦相手</Label>
               <Input id="opponent" name="opponent" defaultValue={m.opponent ?? ""} />
             </div>
-            <div>
+            <div className="min-w-0">
               <Label htmlFor="match_date">日付</Label>
               <Input
                 id="match_date"
                 name="match_date"
                 type="date"
+                className="appearance-none"
                 defaultValue={m.match_date ?? ""}
               />
             </div>
@@ -108,6 +109,48 @@ export default async function EditMatchPage({
               />
             </div>
           </div>
+
+          {/* Q別スコア: 試合記録の「試合終了」で自動記入。手動でも修正できる */}
+          <fieldset>
+            <legend className="mb-1.5 block text-sm font-medium text-slate-700">
+              Q別スコア(得点 / 失点、任意)
+            </legend>
+            <div className="grid grid-cols-5 gap-1.5">
+              {(["1", "2", "3", "4", "5"] as const).map((q) => {
+                const s = m.quarter_scores?.[q];
+                const label = q === "5" ? "PSO" : `Q${q}`;
+                return (
+                  <div key={q} className="min-w-0 space-y-1">
+                    <p className="text-center text-xs font-semibold text-slate-500">
+                      {label}
+                    </p>
+                    <Input
+                      name={`q${q}_for`}
+                      type="number"
+                      min={0}
+                      max={99}
+                      inputMode="numeric"
+                      placeholder="得"
+                      defaultValue={s?.for ?? ""}
+                      aria-label={`${label}の得点`}
+                      className="px-1 text-center text-sm"
+                    />
+                    <Input
+                      name={`q${q}_against`}
+                      type="number"
+                      min={0}
+                      max={99}
+                      inputMode="numeric"
+                      placeholder="失"
+                      defaultValue={s?.against ?? ""}
+                      aria-label={`${label}の失点`}
+                      className="px-1 text-center text-sm"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </fieldset>
           <div>
             <Label htmlFor="notes">メモ</Label>
             <Textarea id="notes" name="notes" rows={3} defaultValue={m.notes ?? ""} />

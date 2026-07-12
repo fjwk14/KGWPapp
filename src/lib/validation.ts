@@ -122,6 +122,38 @@ export const clipFormSchema = z
     path: ["end_min"],
   });
 
+// Q別スコア入力(q1_for/q1_against 〜 q5_for/q5_against)をJSONへ。
+// どのQにも値がなければ null(未記入)を返す。
+const quarterScoreValue = z.preprocess(
+  emptyAsUndefined,
+  z.coerce.number().int().min(0).max(99).optional()
+);
+
+export type QuarterScoresInput = Partial<
+  Record<"1" | "2" | "3" | "4" | "5", { for?: number; against?: number }>
+>;
+
+export function parseQuarterScores(
+  get: (key: string) => unknown
+):
+  | { ok: true; data: QuarterScoresInput | null }
+  | { ok: false; message: string } {
+  const out: QuarterScoresInput = {};
+  for (const q of ["1", "2", "3", "4", "5"] as const) {
+    const f = quarterScoreValue.safeParse(get(`q${q}_for`));
+    const a = quarterScoreValue.safeParse(get(`q${q}_against`));
+    if (!f.success || !a.success) {
+      const label = q === "5" ? "PSO" : `Q${q}`;
+      return { ok: false, message: `${label}のスコアは0〜99の数値で入力してください` };
+    }
+    const entry: { for?: number; against?: number } = {};
+    if (f.data != null) entry.for = f.data;
+    if (a.data != null) entry.against = a.data;
+    if (entry.for != null || entry.against != null) out[q] = entry;
+  }
+  return { ok: true, data: Object.keys(out).length > 0 ? out : null };
+}
+
 // 試合動画の追加(動画は試合後に共有されるため後付けできる)
 export const matchVideoSchema = z.object({
   quarter: z.preprocess(
