@@ -57,7 +57,7 @@ try {
     await page.click('button:has-text("登録してそのまま試合記録へ")');
     await page.waitForURL(/\/matches\/[0-9a-f-]+\/live$/);
     matchUrl = page.url().replace(/\/live$/, "");
-    await page.waitForSelector("text=出場メンバーを選択");
+    await page.waitForSelector("text=出場メンバーの確認");
   });
 
   await step("試合中: メンバー選択→記録(1-1)", async () => {

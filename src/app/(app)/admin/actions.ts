@@ -74,6 +74,18 @@ export async function updateMember(formData: FormData) {
       : null;
   if (role.data !== "admin") secondaryRole = null;
 
+  // 既定の帽子番号(1〜99 / 空欄はnull)とポジション
+  const rawCap = String(formData.get("cap_number") ?? "").trim();
+  let capNumber: number | null = null;
+  if (rawCap !== "") {
+    const n = Number(rawCap);
+    if (!Number.isInteger(n) || n < 1 || n > 99) {
+      backTo("/admin", "帽子番号は1〜99で入力してください");
+    }
+    capNumber = n;
+  }
+  const isGk = String(formData.get("is_gk") ?? "0") === "1";
+
   const supabase = await createClient();
 
   // 最後のadminを降格・非アクティブ化するとチーム管理が不可能になるため防ぐ
@@ -94,11 +106,20 @@ export async function updateMember(formData: FormData) {
 
   const { data, error } = await supabase
     .from("memberships")
-    .update({ role: role.data, status: status.data, secondary_role: secondaryRole })
+    .update({
+      role: role.data,
+      status: status.data,
+      secondary_role: secondaryRole,
+      cap_number: capNumber,
+      is_gk: isGk,
+    })
     .eq("id", membershipId)
     .select("id");
   if (error || !data?.length) {
-    backTo("/admin", "更新できませんでした(権限がない可能性があります)");
+    const message = error?.code === "23505"
+      ? "その帽子番号は他のメンバーが使用中です"
+      : "更新できませんでした(権限がない可能性があります)";
+    backTo("/admin", message);
   }
   revalidatePath("/admin");
   backTo("/admin");

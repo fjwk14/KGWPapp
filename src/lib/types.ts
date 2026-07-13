@@ -40,6 +40,8 @@ export interface Membership {
   role: Role;
   secondary_role: Role | null;
   status: MembershipStatus;
+  cap_number: number | null;
+  is_gk: boolean;
 }
 
 export interface Profile {

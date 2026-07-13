@@ -142,6 +142,32 @@ export default async function AdminPage({
                   )}
                 </Select>
               </div>
+              {/* 既定の帽子番号・ポジション(試合記録の初期値になる) */}
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <label className="text-xs text-slate-400">帽子番号</label>
+                  <Input
+                    name="cap_number"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={2}
+                    defaultValue={m.cap_number ?? ""}
+                    placeholder="未設定"
+                    className="text-sm"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-slate-400">ポジション</label>
+                  <Select
+                    name="is_gk"
+                    defaultValue={m.is_gk ? "1" : "0"}
+                    className="w-full text-sm"
+                  >
+                    <option value="0">フィールダー</option>
+                    <option value="1">キーパー(GK)</option>
+                  </Select>
+                </div>
+              </div>
               <Button type="submit" variant="secondary" className="w-full">
                 更新
               </Button>

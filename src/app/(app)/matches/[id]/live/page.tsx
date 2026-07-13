@@ -29,7 +29,7 @@ export default async function LiveStatsPage({
     await Promise.all([
       supabase
         .from("memberships")
-        .select("user_id, users(name)")
+        .select("user_id, cap_number, is_gk, users(name)")
         .eq("team_id", team.id)
         .eq("status", "active"),
       supabase
@@ -44,12 +44,18 @@ export default async function LiveStatsPage({
         .order("created_at"),
     ]);
 
-  const members = ((membersData ?? []) as unknown as {
+  const memberRows = (membersData ?? []) as unknown as {
     user_id: string;
+    cap_number: number | null;
+    is_gk: boolean;
     users: Pick<Profile, "name"> | null;
-  }[]).map((m) => ({ user_id: m.user_id, name: m.users?.name ?? "不明" }));
+  }[];
+  const members = memberRows.map((m) => ({
+    user_id: m.user_id,
+    name: m.users?.name ?? "不明",
+  }));
 
-  const roster: RosterEntry[] = ((rosterData ?? []) as unknown as {
+  const savedRoster: RosterEntry[] = ((rosterData ?? []) as unknown as {
     user_id: string;
     cap_number: number;
     is_gk: boolean;
@@ -60,6 +66,20 @@ export default async function LiveStatsPage({
     is_gk: r.is_gk,
     name: r.users?.name ?? "不明",
   }));
+
+  // この試合のロスターが未保存なら、管理画面で設定した各メンバーの
+  // 既定(帽子番号あり)から初期ロスターを組み立て、毎回の手入力を省く
+  const rosterSaved = savedRoster.length > 0;
+  const defaultRoster: RosterEntry[] = memberRows
+    .filter((m) => m.cap_number != null)
+    .map((m) => ({
+      user_id: m.user_id,
+      cap_number: m.cap_number as number,
+      is_gk: m.is_gk,
+      name: m.users?.name ?? "不明",
+    }))
+    .sort((a, b) => a.cap_number - b.cap_number);
+  const roster = rosterSaved ? savedRoster : defaultRoster;
 
   return (
     <>
@@ -81,6 +101,7 @@ export default async function LiveStatsPage({
         matchTitle={match.title}
         members={members}
         initialRoster={roster}
+        rosterSaved={rosterSaved}
         initialEvents={(eventsData ?? []) as StatsEvent[]}
       />
     </>

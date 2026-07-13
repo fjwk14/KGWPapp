@@ -31,7 +31,7 @@ export const requireMembership = cache(async (): Promise<SessionContext> => {
   // (MVPはシングルチーム前提。チーム切替UIは将来対応)
   const { data: membership } = await supabase
     .from("memberships")
-    .select("id, team_id, user_id, role, secondary_role, status")
+    .select("id, team_id, user_id, role, secondary_role, status, cap_number, is_gk")
     .eq("user_id", user.id)
     .eq("status", "active")
     .order("created_at", { ascending: true })

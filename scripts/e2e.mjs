@@ -109,8 +109,8 @@ try {
     await page.fill('[name="end_min"]', "10");
     await page.fill('[name="end_sec"]', "45");
     await page.fill("#description", "戻りが遅れて2対1を作られた");
-    // タグチップを選択(action:カウンター / cause:戻り遅れ / result:失点)
-    await page.click('label:has(input[value="action:カウンター"])');
+    // タグチップを選択(action:ドライブシュート / cause:戻り遅れ / result:失点)
+    await page.click('label:has(input[value="action:ドライブシュート"])');
     await page.click('label:has(input[value="cause:戻り遅れ"])');
     await page.click('label:has(input[value="result:失点"])');
     await page.fill("#first_comment", "切り替えの声かけを徹底したい");
@@ -118,7 +118,7 @@ try {
     await page.click('button[type="submit"]');
     await page.waitForURL(/\/clips\/[0-9a-f-]+$/);
     const body = await page.textContent("body");
-    for (const expected of ["カウンター", "戻り遅れ", "失点", "切り替えの声かけを徹底したい"]) {
+    for (const expected of ["ドライブシュート", "戻り遅れ", "失点", "切り替えの声かけを徹底したい"]) {
       if (!body.includes(expected)) throw new Error(`クリップ詳細に「${expected}」が無い`);
     }
     await shot("04-clip-detail");
@@ -150,9 +150,9 @@ try {
     await page.fill('[name="start_sec"]', "20");
     await page.fill('[name="end_min"]', "21");
     await page.fill('[name="end_sec"]', "50");
-    await page.click('label:has(input[value="phase:6対5"])');
+    await page.click('label:has(input[value="phase:退水攻撃（6対5）"])');
     await page.click('label:has(input[value="result:得点"])');
-    await page.click('label:has(input[value="action:シュート"])');
+    await page.click('label:has(input[value="action:センターシュート"])');
     await page.click('button[type="submit"]');
     await page.waitForURL(/\/clips\/[0-9a-f-]+$/);
   });

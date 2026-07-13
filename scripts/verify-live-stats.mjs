@@ -107,7 +107,7 @@ try {
   await step("試合詳細に「試合記録をつける」ボタン → 出場メンバー選択", async () => {
     await page.click("text=⏱ 試合記録をつける");
     await page.waitForURL(/\/matches\/[0-9a-f-]+\/live$/);
-    await page.waitForSelector("text=出場メンバーを選択");
+    await page.waitForSelector("text=出場メンバーの確認");
     // 3人選択: 管理者(#1) / 選手ビー(#2) / キーパーシー(#3→GK)
     for (const name of ["スタッツ管理者", "選手ビー", "キーパーシー"]) {
       await page
@@ -159,7 +159,7 @@ try {
     if (!toggle.includes("OFF")) throw new Error(`EがOFFに戻らない: ${toggle}`);
   });
 
-  await step("GK記録: 失点(2-1)とブロック", async () => {
+  await step("GK記録: 失点(2-1)とセーブ", async () => {
     await page.click('button:has-text("キーパーシー")');
     await page.waitForTimeout(350);
     await page.click('button:has-text("失点")');
@@ -167,7 +167,7 @@ try {
     await scoreIs("2 - 1");
     await page.click('button:has-text("キーパーシー")');
     await page.waitForTimeout(350);
-    await page.click('button:has-text("ブロック")');
+    await page.click('button:has-text("セーブ")');
     await page.waitForTimeout(350);
   });
 

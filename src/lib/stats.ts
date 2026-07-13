@@ -78,7 +78,7 @@ export const MISS_SUBTYPE_LABELS: Record<MissSubtype, string> = {
 
 export const GK_RESULT_LABELS: Record<GkResult, string> = {
   goal_against: "失点",
-  block: "ブロック",
+  block: "セーブ",
   off_target: "枠外",
 };
 

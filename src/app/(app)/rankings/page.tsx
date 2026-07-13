@@ -37,7 +37,7 @@ export default async function RankingsPage() {
     { title: "アシスト", icon: "🤝", unit: "回", entries: rankings.assists },
     { title: "退水誘発(E・P)", icon: "💪", unit: "回", entries: rankings.drawnExclusions },
     { title: "カット", icon: "🛡", unit: "回", entries: rankings.cuts },
-    { title: "GKブロック", icon: "🧤", unit: "回", entries: rankings.gkBlocks },
+    { title: "GKセーブ", icon: "🧤", unit: "回", entries: rankings.gkBlocks },
   ];
   const medals = ["🥇", "🥈", "🥉"];
 

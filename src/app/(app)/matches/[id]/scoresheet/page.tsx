@@ -218,7 +218,7 @@ export default async function ScoresheetPage({
                 <th className="py-1 text-left">GK</th>
                 <th className="px-2">被シュート</th>
                 <th className="px-2">失点</th>
-                <th className="px-2">ブロック</th>
+                <th className="px-2">セーブ</th>
                 <th className="px-2">枠外</th>
                 <th className="px-2">阻止率</th>
               </tr>
@@ -248,7 +248,7 @@ export default async function ScoresheetPage({
           </table>
         </div>
         <p className="text-[10px] text-slate-400">
-          枠内シュート阻止率 = ブロック ÷ (失点 + ブロック)
+          枠内シュート阻止率 = セーブ ÷ (失点 + セーブ)
         </p>
       </Card>
     </>

@@ -36,6 +36,9 @@ interface Props {
   matchTitle: string;
   members: Member[];
   initialRoster: RosterEntry[];
+  // この試合のロスターが match_rosters に保存済みか。未保存なら
+  // (管理画面の既定で埋めた)出場メンバー確認画面から始める。
+  rosterSaved: boolean;
   initialEvents: StatsEvent[];
 }
 
@@ -75,13 +78,15 @@ export default function LiveScreen({
   matchTitle,
   members,
   initialRoster,
+  rosterSaved,
   initialEvents,
 }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
 
   const [roster, setRoster] = useState<RosterEntry[]>(initialRoster);
-  const [editingRoster, setEditingRoster] = useState(initialRoster.length === 0);
+  // 未保存(=既定で仮組み or 空)なら出場メンバー確認から始める
+  const [editingRoster, setEditingRoster] = useState(!rosterSaved);
 
   const [events, setEvents] = useState<StatsEvent[]>(initialEvents);
   const [ops, setOps] = useState<PendingOp[]>([]);
@@ -721,19 +726,22 @@ function RosterEditor({
   onSaved: (roster: RosterEntry[]) => void;
 }) {
   const supabase = useMemo(() => createClient(), []);
-  const [entries, setEntries] = useState<Map<string, { cap: number; isGk: boolean }>>(
+  // capは文字列で保持(数値inputの「01」表示バグを避けるためtext入力にする)
+  const [entries, setEntries] = useState<Map<string, { cap: string; isGk: boolean }>>(
     () =>
       new Map(
-        initial.map((r) => [r.user_id, { cap: r.cap_number, isGk: r.is_gk }])
+        initial.map((r) => [r.user_id, { cap: String(r.cap_number), isGk: r.is_gk }])
       )
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const nextCap = () => {
-    const used = new Set([...entries.values()].map((e) => e.cap));
-    for (let n = 1; n <= 99; n++) if (!used.has(n)) return n;
-    return 99;
+    const used = new Set(
+      [...entries.values()].map((e) => Number(e.cap)).filter((n) => n > 0)
+    );
+    for (let n = 1; n <= 99; n++) if (!used.has(n)) return String(n);
+    return "99";
   };
 
   const toggle = (userId: string) => {
@@ -745,7 +753,7 @@ function RosterEditor({
     });
   };
 
-  const update = (userId: string, patch: Partial<{ cap: number; isGk: boolean }>) => {
+  const update = (userId: string, patch: Partial<{ cap: string; isGk: boolean }>) => {
     setEntries((prev) => {
       const next = new Map(prev);
       const cur = next.get(userId);
@@ -754,13 +762,21 @@ function RosterEditor({
     });
   };
 
+  // 入力を半角数字1〜2桁に正規化(先頭0を除去。「01」→「1」)
+  const sanitizeCap = (raw: string) =>
+    raw.replace(/[^0-9]/g, "").replace(/^0+/, "").slice(0, 2);
+
   const save = async () => {
     setError(null);
     if (entries.size === 0) {
       setError("出場メンバーを1人以上選択してください");
       return;
     }
-    const caps = [...entries.values()].map((e) => e.cap);
+    const caps = [...entries.values()].map((e) => Number(e.cap));
+    if (caps.some((n) => !Number.isInteger(n) || n < 1 || n > 99)) {
+      setError("帽子番号は1〜99で入力してください");
+      return;
+    }
     if (new Set(caps).size !== caps.length) {
       setError("帽子番号が重複しています");
       return;
@@ -777,7 +793,7 @@ function RosterEditor({
         match_id: matchId,
         team_id: teamId,
         user_id,
-        cap_number: e.cap,
+        cap_number: Number(e.cap),
         is_gk: e.isGk,
       }));
       const { error: insError } = await supabase.from("match_rosters").insert(rows);
@@ -803,9 +819,10 @@ function RosterEditor({
 
   return (
     <div className="space-y-3 pb-24">
-      <h2 className="font-bold">出場メンバーを選択</h2>
+      <h2 className="font-bold">出場メンバーの確認</h2>
       <p className="text-xs text-slate-500">
-        タップで選択し、帽子番号とGKを設定してください(通常13人+GK)。
+        管理画面で設定した帽子番号・ポジションで初期表示しています。
+        今日欠場する人はタップで外し、そのまま開始してください。
       </p>
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -830,12 +847,12 @@ function RosterEditor({
               {entry && (
                 <>
                   <input
-                    type="number"
-                    min={1}
-                    max={99}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={2}
                     value={entry.cap}
                     onChange={(e) =>
-                      update(m.user_id, { cap: Number(e.target.value) })
+                      update(m.user_id, { cap: sanitizeCap(e.target.value) })
                     }
                     className="w-16 rounded-lg border border-slate-300 px-2 py-2 text-center text-sm"
                     aria-label={`${m.name}の帽子番号`}
