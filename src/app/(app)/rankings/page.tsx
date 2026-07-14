@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card } from "@/components/ui";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -43,7 +44,12 @@ export default async function RankingsPage() {
 
   return (
     <>
-      <h1 className="text-lg font-bold">ランキング</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-lg font-bold">ランキング</h1>
+        <Link href="/physical" className="text-sm text-brand-600 underline">
+          💪 フィジカル →
+        </Link>
+      </div>
       <p className="text-sm text-slate-500">
         試合記録から自動集計(全{matchCount}試合)
       </p>

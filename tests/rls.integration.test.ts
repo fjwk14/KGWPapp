@@ -695,4 +695,44 @@ describe.skipIf(!DATABASE_URL)("RLS統合テスト(実PostgreSQL)", () => {
       });
     });
   });
+
+  describe("フィジカル測定(physical_measurements)", () => {
+    const MANAGER = "66666666-6666-6666-6666-666666666666";
+
+    it("マネージャーは測定値を記録できる", async () => {
+      await asUser(MANAGER, async (q) => {
+        const res = await q(
+          `insert into physical_measurements (team_id, user_id, metric, value)
+           values ($1, $2, 'vertical', 65) returning id`,
+          [TEAM_A, PLAYER]
+        );
+        expect(res.rowCount).toBe(1);
+      });
+    });
+
+    it("選手は測定値を記録できない(row-level security)", async () => {
+      await asUser(PLAYER, async (q) => {
+        await expect(
+          q(
+            `insert into physical_measurements (team_id, user_id, metric, value)
+             values ($1, $2, 'vertical', 60)`,
+            [TEAM_A, PLAYER]
+          )
+        ).rejects.toThrow(/row-level security/);
+      });
+    });
+
+    it("選手も測定値を閲覧できる", async () => {
+      await db.query(`
+        insert into public.physical_measurements (team_id, user_id, metric, value, created_by)
+        values ('${TEAM_A}', '${PLAYER}', 'sprint10', 5.2, '${MANAGER}')`);
+      await asUser(PLAYER, async (q) => {
+        const res = await q(
+          "select id from physical_measurements where team_id = $1",
+          [TEAM_A]
+        );
+        expect(res.rowCount).toBeGreaterThan(0);
+      });
+    });
+  });
 });
