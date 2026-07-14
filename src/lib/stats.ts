@@ -21,7 +21,11 @@ export type StatsEventType =
   | "miss"
   | "gk_faced"
   | "attack_end_no_shot"
-  | "opponent_goal";
+  | "opponent_goal"
+  // 展開力・対人守備の実データ化(0014で追加)
+  | "key_pass" // 縦パス(攻撃の起点)
+  | "counter_join" // 速攻参加
+  | "defense_stop"; // 対人守備成功
 
 export type ShotSubtype =
   | "center"
@@ -102,6 +106,12 @@ export function describeEvent(
       return `${who}: 退水`;
     case "offensive_foul":
       return `${who}: オフェンシブファウル`;
+    case "key_pass":
+      return `${who}: 縦パス(起点)`;
+    case "counter_join":
+      return `${who}: 速攻参加`;
+    case "defense_stop":
+      return `${who}: 対人守備`;
     case "miss":
       return `${who}: ${MISS_SUBTYPE_LABELS[e.subtype as MissSubtype] ?? "ミス"}`;
     case "gk_faced":

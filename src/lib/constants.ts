@@ -11,24 +11,24 @@ export const COMPETITIONS = [
   "和歌山選手権",
 ] as const;
 
-// ポジション区分(帽子番号の位置 + GK)。分析のポジション別基準に使う。
-// 1=右奥 / 2=右手前 / 3=センターバック / 4=左手前 / 5=左奥 / 6=センター / GK
+// ポジション区分(攻撃時の立ち位置 + GK)。分析のポジション別基準に使う。
+// 1=右0度 / 2=右45度 / 3=バック / 4=左45度 / 5=左0度 / 6=フローター / GK
 export const FIELD_POSITIONS: { value: number; label: string }[] = [
-  { value: 1, label: "① 右奥" },
-  { value: 2, label: "② 右手前" },
-  { value: 3, label: "③ センターバック" },
-  { value: 4, label: "④ 左手前" },
-  { value: 5, label: "⑤ 左奥" },
-  { value: 6, label: "⑥ センター" },
+  { value: 1, label: "① 右0度" },
+  { value: 2, label: "② 右45度" },
+  { value: 3, label: "③ バック" },
+  { value: 4, label: "④ 左45度" },
+  { value: 5, label: "⑤ 左0度" },
+  { value: 6, label: "⑥ フローター" },
 ];
 
 export const POSITION_LABELS: Record<string, string> = {
-  "1": "右奥",
-  "2": "右手前",
-  "3": "センターバック",
-  "4": "左手前",
-  "5": "左奥",
-  "6": "センター",
+  "1": "右0度",
+  "2": "右45度",
+  "3": "バック",
+  "4": "左45度",
+  "5": "左0度",
+  "6": "フローター",
   gk: "GK",
 };
 

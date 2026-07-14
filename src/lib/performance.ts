@@ -13,6 +13,9 @@ interface RawPlayerStats {
   EX: number; // 退水された数
   OF: number; // オフェンシブファウル
   MISS: number; // ミス
+  KP: number; // 縦パス(起点)
+  CJ: number; // 速攻参加
+  DS: number; // 対人守備成功
 }
 
 function buildRawPlayerStats(
@@ -23,7 +26,7 @@ function buildRawPlayerStats(
   const ensure = (userId: string): RawPlayerStats => {
     let s = stats.get(userId);
     if (!s) {
-      s = { user_id: userId, G: 0, SH: 0, A: 0, DE: 0, C: 0, EX: 0, OF: 0, MISS: 0 };
+      s = { user_id: userId, G: 0, SH: 0, A: 0, DE: 0, C: 0, EX: 0, OF: 0, MISS: 0, KP: 0, CJ: 0, DS: 0 };
       stats.set(userId, s);
     }
     return s;
@@ -58,6 +61,15 @@ function buildRawPlayerStats(
       case "miss":
         s.MISS += 1;
         break;
+      case "key_pass":
+        s.KP += 1;
+        break;
+      case "counter_join":
+        s.CJ += 1;
+        break;
+      case "defense_stop":
+        s.DS += 1;
+        break;
     }
   }
 
@@ -83,12 +95,12 @@ export const PERFORMANCE_AXIS_LABELS: Record<PerformanceAxisKey, string> = {
   efficiency: "効率性",
 };
 
-// 展開力・対人守備は現状のイベント種別からの簡易推定(専用の記録項目がないため)
+// 全6軸を試合記録の実データから算出(0014で展開力・対人守備の専用項目を追加)
 export const PERFORMANCE_AXIS_APPROX: Record<PerformanceAxisKey, boolean> = {
   decisiveness: false,
   creativity: false,
-  buildup: true,
-  defense: true,
+  buildup: false,
+  defense: false,
   steal: false,
   efficiency: false,
 };
@@ -98,10 +110,10 @@ function rawAxisValues(s: RawPlayerStats): Record<PerformanceAxisKey, number> {
   return {
     decisiveness: s.G + shotRate * 5,
     creativity: s.A + s.DE,
-    // ※簡易推定: 専用の「展開」記録が無いため、アシスト・シュート関与・誘発から近似
-    buildup: s.A + s.SH * 0.3 + s.DE * 0.5,
-    // ※簡易推定: 専用の「対人守備」記録が無いため、カットと被退水から近似
-    defense: Math.max(0, s.C * 0.6 - s.EX * 0.5),
+    // 展開力: 縦パス(起点)+ 速攻参加 + アシストの一部
+    buildup: s.KP + s.CJ + s.A * 0.5,
+    // 対人守備: 対人守備成功が主。被退水はマイナス
+    defense: Math.max(0, s.DS - s.EX * 0.5),
     steal: s.C,
     efficiency: shotRate * 10 - (s.MISS + s.OF),
   };

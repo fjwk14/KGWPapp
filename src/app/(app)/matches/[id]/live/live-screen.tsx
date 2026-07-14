@@ -62,6 +62,9 @@ const FIELD_ACTIONS: {
   subtype?: string;
 }[] = [
   { label: "アシスト", type: "assist" },
+  { label: "縦パス", type: "key_pass" },
+  { label: "速攻参加", type: "counter_join" },
+  { label: "対人守備", type: "defense_stop" },
   { label: "カット", type: "cut" },
   { label: "E誘発", type: "drawn_exclusion", subtype: "exclusion" },
   { label: "P誘発", type: "drawn_exclusion", subtype: "penalty" },

@@ -51,26 +51,36 @@ describe("buildPerformanceProfiles", () => {
     expect(creativity.rawValue).toBeCloseTo(2 + 2); // A=2, DE=2
   });
 
-  it("展開力・対人守備はapprox=trueで簡易推定と分かる", () => {
+  it("全6軸が実データ算出(approx=false)になった", () => {
     const [p1] = buildPerformanceProfiles([], roster);
-    const buildup = p1.axes.find((a) => a.key === "buildup")!;
-    const defense = p1.axes.find((a) => a.key === "defense")!;
-    const decisiveness = p1.axes.find((a) => a.key === "decisiveness")!;
-    expect(buildup.approx).toBe(true);
-    expect(defense.approx).toBe(true);
-    expect(decisiveness.approx).toBe(false);
+    for (const key of ["buildup", "defense", "decisiveness", "creativity", "steal", "efficiency"]) {
+      expect(p1.axes.find((a) => a.key === key)!.approx).toBe(false);
+    }
   });
 
-  it("対人守備 = C*0.6 - EX*0.5、負にはならずclampされる", () => {
+  it("展開力 = 縦パス + 速攻参加 + アシスト*0.5", () => {
     const events = [
-      ev({ type: "exclusion", player_id: "p1" }),
-      ev({ type: "exclusion", player_id: "p1" }),
+      ev({ type: "key_pass", player_id: "p1" }),
+      ev({ type: "key_pass", player_id: "p1" }),
+      ev({ type: "counter_join", player_id: "p1" }),
+      ev({ type: "assist", player_id: "p1" }),
+    ];
+    const [p1] = buildPerformanceProfiles(events, roster);
+    const buildup = p1.axes.find((a) => a.key === "buildup")!;
+    // KP=2, CJ=1, A=1 -> 2 + 1 + 0.5 = 3.5
+    expect(buildup.rawValue).toBeCloseTo(3.5);
+  });
+
+  it("対人守備 = 対人守備成功 - 被退水*0.5、負にはならずclamp", () => {
+    const events = [
+      ev({ type: "defense_stop", player_id: "p1" }),
+      ev({ type: "defense_stop", player_id: "p1" }),
       ev({ type: "exclusion", player_id: "p1" }),
     ];
     const [p1] = buildPerformanceProfiles(events, roster);
     const defense = p1.axes.find((a) => a.key === "defense")!;
-    // C=0, EX=3 -> 0*0.6 - 3*0.5 = -1.5 -> clamp 0
-    expect(defense.rawValue).toBe(0);
+    // DS=2, EX=1 -> 2 - 0.5 = 1.5
+    expect(defense.rawValue).toBeCloseTo(1.5);
   });
 
   it("効率性は負になりうる(生値はclampしない、Tには反映される)", () => {
