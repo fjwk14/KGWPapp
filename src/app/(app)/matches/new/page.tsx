@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
-import { Button, Card, ErrorBanner, Input, Label, Textarea } from "@/components/ui";
+import { Button, Card, ErrorBanner, Input, Label, Select, Textarea } from "@/components/ui";
 import { requireMembership } from "@/lib/session";
 import { can } from "@/lib/permissions";
+import { COMPETITIONS } from "@/lib/constants";
 import { createMatch } from "../actions";
 
 // 試合登録は当日フローの入口。試合前に最低限だけ入力して
@@ -49,7 +50,14 @@ export default async function NewMatchPage({
           </div>
           <div>
             <Label htmlFor="competition">大会名</Label>
-            <Input id="competition" name="competition" placeholder="関西学生リーグ" />
+            <Select id="competition" name="competition" defaultValue="">
+              <option value="">選択してください</option>
+              {COMPETITIONS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </Select>
           </div>
           <div>
             <Label htmlFor="notes">メモ</Label>

@@ -65,22 +65,25 @@ try {
   await step("管理画面で帽子番号・ポジションを設定(01→1正規化含む)", async () => {
     await page.goto(`${BASE}/admin`);
     // 先頭=管理者本人 / 2番目=定選手(created_at順)
+    // サーバーアクションのPOST完了を待つ(同一URLへのredirectのため)
+    const submitAndWait = (form) =>
+      Promise.all([
+        page.waitForResponse(
+          (r) => r.request().method() === "POST" && r.status() < 400
+        ),
+        form.locator('button:has-text("更新")').click(),
+      ]);
+
     const adminForm = page.locator('form:has(input[name="cap_number"])').first();
     await adminForm.locator('input[name="cap_number"]').fill("7");
-    await adminForm.locator('select[name="is_gk"]').selectOption("0");
-    await Promise.all([
-      page.waitForLoadState("networkidle"),
-      adminForm.locator('button:has-text("更新")').click(),
-    ]);
+    await adminForm.locator('select[name="position"]').selectOption("6"); // センター
+    await submitAndWait(adminForm);
 
     const memberForm = page.locator('form:has(input[name="cap_number"])').nth(1);
     // 01と入力してもサーバー側で1として扱われる(=重複や桁ズレを防ぐ)
     await memberForm.locator('input[name="cap_number"]').fill("01");
-    await memberForm.locator('select[name="is_gk"]').selectOption("1");
-    await Promise.all([
-      page.waitForLoadState("networkidle"),
-      memberForm.locator('button:has-text("更新")').click(),
-    ]);
+    await memberForm.locator('select[name="position"]').selectOption("gk");
+    await submitAndWait(memberForm);
 
     // 保存後の再読込で 1 と表示される
     await page.goto(`${BASE}/admin`);

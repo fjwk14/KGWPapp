@@ -12,6 +12,7 @@ import {
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
+import { COMPETITIONS } from "@/lib/constants";
 import type { Match } from "@/lib/types";
 import { updateMatch } from "../../actions";
 
@@ -68,11 +69,18 @@ export default async function EditMatchPage({
           </div>
           <div>
             <Label htmlFor="competition">大会名</Label>
-            <Input
-              id="competition"
-              name="competition"
-              defaultValue={m.competition ?? ""}
-            />
+            <Select id="competition" name="competition" defaultValue={m.competition ?? ""}>
+              <option value="">選択してください</option>
+              {COMPETITIONS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+              {/* 一覧にない既存値も選択肢として残す */}
+              {m.competition && !COMPETITIONS.includes(m.competition as (typeof COMPETITIONS)[number]) && (
+                <option value={m.competition}>{m.competition}</option>
+              )}
+            </Select>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>

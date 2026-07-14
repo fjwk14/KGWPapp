@@ -42,6 +42,7 @@ export interface Membership {
   status: MembershipStatus;
   cap_number: number | null;
   is_gk: boolean;
+  field_position: number | null;
 }
 
 export interface Profile {

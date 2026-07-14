@@ -84,7 +84,14 @@ export async function updateMember(formData: FormData) {
     }
     capNumber = n;
   }
-  const isGk = String(formData.get("is_gk") ?? "0") === "1";
+  // ポジション: "gk" | "1".."6" | ""(未設定)
+  const rawPos = String(formData.get("position") ?? "").trim();
+  const isGk = rawPos === "gk";
+  let fieldPosition: number | null = null;
+  if (!isGk && rawPos !== "") {
+    const p = Number(rawPos);
+    if (Number.isInteger(p) && p >= 1 && p <= 6) fieldPosition = p;
+  }
 
   const supabase = await createClient();
 
@@ -112,6 +119,7 @@ export async function updateMember(formData: FormData) {
       secondary_role: secondaryRole,
       cap_number: capNumber,
       is_gk: isGk,
+      field_position: fieldPosition,
     })
     .eq("id", membershipId)
     .select("id");

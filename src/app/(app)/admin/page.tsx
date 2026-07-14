@@ -12,6 +12,7 @@ import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can, ROLE_LABELS } from "@/lib/permissions";
 import type { Membership, Profile, Role } from "@/lib/types";
+import { FIELD_POSITIONS } from "@/lib/constants";
 import { addMember, updateMember } from "./actions";
 import InviteCodeCard from "./invite-code-card";
 
@@ -45,7 +46,7 @@ export default async function AdminPage({
   return (
     <>
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-lg font-bold">チーム管理</h1>
+        <h1 className="text-lg font-bold">チーム設定</h1>
         <div className="flex flex-col items-end gap-0.5">
           <Link href="/admin/tags" className="text-sm text-brand-600 underline">
             タグテンプレート管理 →
@@ -159,12 +160,17 @@ export default async function AdminPage({
                 <div className="flex-1">
                   <label className="text-xs text-slate-400">ポジション</label>
                   <Select
-                    name="is_gk"
-                    defaultValue={m.is_gk ? "1" : "0"}
+                    name="position"
+                    defaultValue={m.is_gk ? "gk" : m.field_position ? String(m.field_position) : ""}
                     className="w-full text-sm"
                   >
-                    <option value="0">フィールダー</option>
-                    <option value="1">キーパー(GK)</option>
+                    <option value="">未設定</option>
+                    {FIELD_POSITIONS.map((p) => (
+                      <option key={p.value} value={String(p.value)}>
+                        {p.label}
+                      </option>
+                    ))}
+                    <option value="gk">GK</option>
                   </Select>
                 </div>
               </div>
