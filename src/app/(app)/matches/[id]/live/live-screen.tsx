@@ -63,13 +63,13 @@ function loadOps(matchId: string): PendingOp[] {
   }
 }
 
-// マネージャーモード: 紙の記録シートにある項目のみ
+// マネージャーモード: 紙の記録シートにある項目のみ。
+// アシストは得点・退水誘発の直後にパネルから紐付けるためここには置かない。
 const SHEET_ACTIONS: {
   label: string;
   type: StatsEvent["type"];
   subtype?: string;
 }[] = [
-  { label: "アシスト", type: "assist" },
   { label: "カット", type: "cut" },
   { label: "E誘発", type: "drawn_exclusion", subtype: "exclusion" },
   { label: "P誘発", type: "drawn_exclusion", subtype: "penalty" },
@@ -81,18 +81,25 @@ const SHEET_ACTIONS: {
 ];
 
 // 分析モード: 選手のプレー総合スコア(レーダー軸)に反映される項目。
-// 6軸のうち手薄だった創出力・ボール奪取・決定力にも実データを供給する(0018)。
-const ANALYSIS_ACTIONS: {
+// O(オフェンス)/D(ディフェンス)に分け、クリップタグの語彙に揃える(0019)。
+interface AnalysisAction {
   label: string;
   description: string;
   type: StatsEvent["type"];
-}[] = [
-  { label: "縦パス", description: "攻撃の起点になるパス(展開力)", type: "key_pass" },
+}
+const ANALYSIS_OFFENSE: AnalysisAction[] = [
+  { label: "縦パス", description: "攻撃の起点になる縦パス(展開力)", type: "key_pass" },
+  { label: "サイド展開", description: "逆サイドへの展開・揺さぶり(展開力)", type: "side_switch" },
   { label: "速攻参加", description: "カウンターに泳ぎ参加(展開力)", type: "counter_join" },
-  { label: "対人守備", description: "1対1で相手を止めた(対人守備)", type: "defense_stop" },
   { label: "マーク外し", description: "得点機会を作るオフボールの動き(創出力)", type: "off_ball_move" },
-  { label: "リバウンド奪取", description: "こぼれ球の回収(ボール奪取)", type: "rebound_win" },
-  { label: "ドライブ突破", description: "守備を割ってゴール前まで運ぶ(決定力)", type: "drive_break" },
+  { label: "スクリーン", description: "味方のためのピック・壁(創出力)", type: "screen" },
+  { label: "ドライブ突破", description: "守備を割って仕掛ける(創出力)", type: "drive_break" },
+];
+const ANALYSIS_DEFENSE: AnalysisAction[] = [
+  { label: "対人守備", description: "1対1で相手を止めた(守備力)", type: "defense_stop" },
+  { label: "シュートブロック", description: "コースに入って防いだ(守備力)", type: "shot_block" },
+  { label: "スティール", description: "相手からボールを奪った(判断力)", type: "steal_ball" },
+  { label: "リバウンド奪取", description: "こぼれ球の回収(判断力)", type: "rebound_win" },
 ];
 
 export default function LiveScreen({
@@ -123,8 +130,12 @@ export default function LiveScreen({
   const [extraMan, setExtraMan] = useState(false);
   const [selected, setSelected] = useState<RosterEntry | null>(null);
   const [shotSubtype, setShotSubtype] = useState<ShotSubtype | null>(null);
-  // 得点直後にアシスト選手を紐付けるためのプロンプト(得点者のidを保持)
-  const [assistFor, setAssistFor] = useState<{ scorerId: string } | null>(null);
+  // 得点・退水誘発の直後にアシスト選手を紐付けるためのプロンプト。
+  // playerId=得点者/誘発した選手、kind=どちらの場面か(パネル文言に使う)
+  const [assistFor, setAssistFor] = useState<{
+    playerId: string;
+    kind: "goal" | "exclusion";
+  } | null>(null);
   const [showLog, setShowLog] = useState(false);
   const [locked, setLocked] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
@@ -248,14 +259,20 @@ export default function LiveScreen({
       setEvents((prev) => [...prev, event]);
       setOps((prev) => [...prev, { kind: "insert", event }]);
 
-      // E状態の自動制御: 誘発でON、自チーム得点でOFF
+      // E状態の自動制御: 退水誘発でON、自チーム得点でOFF
       if (event.type === "drawn_exclusion" && event.subtype === "exclusion") {
         setExtraMan(true);
       }
       if (event.type === "shot" && event.result === "goal") {
         setExtraMan(false);
         // 得点者が分かっているときはアシスト紐付けプロンプトを出す
-        if (event.player_id) setAssistFor({ scorerId: event.player_id });
+        if (event.player_id) {
+          setAssistFor({ playerId: event.player_id, kind: "goal" });
+        }
+      }
+      // 退水・ペナルティ誘発も、誘発を演出した選手のアシストを紐付けられる
+      if (event.type === "drawn_exclusion" && event.player_id) {
+        setAssistFor({ playerId: event.player_id, kind: "exclusion" });
       }
 
       feedback(describeEvent(event, nameOf));
@@ -295,6 +312,7 @@ export default function LiveScreen({
 
   const removeEvent = useCallback(
     (id: string) => {
+      const removed = events.find((e) => e.id === id);
       setEvents((prev) => prev.filter((e) => e.id !== id));
       setOps((prev) => {
         const pendingInsert = prev.find(
@@ -306,9 +324,13 @@ export default function LiveScreen({
         }
         return [...prev, { kind: "delete", id }];
       });
+      // 退水誘発を取り消したら、それでONになったEも連動してOFFに戻す
+      if (removed?.type === "drawn_exclusion" && removed.subtype === "exclusion") {
+        setExtraMan(false);
+      }
       setTimeout(flush, 50);
     },
-    [flush]
+    [flush, events]
   );
 
   const undo = useCallback(() => {
@@ -662,20 +684,50 @@ export default function LiveScreen({
           </div>
 
           {mode === "analysis" ? (
-            // 分析モード: レーダー軸に反映される項目のみ(2タップ)
-            <div className="max-h-[55vh] space-y-2 overflow-y-auto">
-              {ANALYSIS_ACTIONS.map((a) => (
-                <button
-                  key={a.type}
-                  onClick={() =>
-                    record({ type: a.type, player_id: selected.user_id })
-                  }
-                  className="flex w-full flex-col items-start rounded-lg bg-emerald-50 px-4 py-2.5 text-left"
-                >
-                  <span className="font-bold text-emerald-800">{a.label}</span>
-                  <span className="text-[10px] text-emerald-600">{a.description}</span>
-                </button>
-              ))}
+            // 分析モード: レーダー軸に反映される項目のみ(2タップ)。O/Dで色分け
+            <div className="max-h-[55vh] space-y-3 overflow-y-auto">
+              <div>
+                <p className="mb-1 text-xs font-bold text-blue-700">O(オフェンス)</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {ANALYSIS_OFFENSE.map((a) => (
+                    <button
+                      key={a.type}
+                      onClick={() =>
+                        record({ type: a.type, player_id: selected.user_id })
+                      }
+                      className="flex flex-col items-start rounded-lg bg-blue-50 px-3 py-2 text-left"
+                    >
+                      <span className="text-sm font-bold text-blue-800">{a.label}</span>
+                      <span className="text-[10px] leading-tight text-blue-600">
+                        {a.description}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="mb-1 text-xs font-bold text-emerald-700">
+                  D(ディフェンス)
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {ANALYSIS_DEFENSE.map((a) => (
+                    <button
+                      key={a.type}
+                      onClick={() =>
+                        record({ type: a.type, player_id: selected.user_id })
+                      }
+                      className="flex flex-col items-start rounded-lg bg-emerald-50 px-3 py-2 text-left"
+                    >
+                      <span className="text-sm font-bold text-emerald-800">
+                        {a.label}
+                      </span>
+                      <span className="text-[10px] leading-tight text-emerald-600">
+                        {a.description}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : selected.is_gk ? (
             // GK: 2タップ(選手→結果)
@@ -792,7 +844,8 @@ export default function LiveScreen({
         >
           <div className="mb-3 flex items-center justify-between gap-2">
             <span className="min-w-0 truncate font-bold">
-              ⚽ {nameOf(assistFor.scorerId)} の得点 — アシストは?
+              {assistFor.kind === "goal" ? "⚽" : "🅴"} {nameOf(assistFor.playerId)}{" "}
+              {assistFor.kind === "goal" ? "の得点" : "の退水誘発"} — アシストは?
             </span>
             <button
               onClick={() => recordAssist(null)}
@@ -803,7 +856,7 @@ export default function LiveScreen({
           </div>
           <div className="grid grid-cols-4 gap-2">
             {fieldPlayers
-              .filter((r) => r.user_id !== assistFor.scorerId)
+              .filter((r) => r.user_id !== assistFor.playerId)
               .map((r) => (
                 <button
                   key={r.user_id}

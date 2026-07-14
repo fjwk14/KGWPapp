@@ -134,7 +134,7 @@ export default async function PhysicalDetailPage({
 
       <Card className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-600">
-          フィジカル6軸(本人 vs 同ポジ平均)
+          フィジカル評価(本人 vs 同ポジ平均)
         </h2>
         <p className="text-xs text-slate-400">
           軸の値=その軸に属する測定項目のチーム内偏差値の平均です。

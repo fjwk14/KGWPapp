@@ -26,31 +26,47 @@ const roster: RosterEntry[] = [
 ];
 
 describe("buildPerformanceProfiles", () => {
-  it("決定力 = G + (シュート率)*5 + ドライブ突破*0.5", () => {
+  it("決定力 = G + (シュート率)*5(フィニッシュのみ)", () => {
     const events = [
       ev({ type: "shot", player_id: "p1", result: "goal" }),
       ev({ type: "shot", player_id: "p1", result: "goal" }),
       ev({ type: "shot", player_id: "p1", result: "miss" }),
       ev({ type: "shot", player_id: "p1", result: "miss" }),
-      ev({ type: "drive_break", player_id: "p1" }),
+      ev({ type: "drive_break", player_id: "p1" }), // 決定力ではなく創出力に効く
     ];
     const [p1] = buildPerformanceProfiles(events, roster);
     const decisiveness = p1.axes.find((a) => a.key === "decisiveness")!;
-    // G=2, SH=4, shotRate=0.5, DB=1 -> 2 + 0.5*5 + 0.5 = 5
-    expect(decisiveness.rawValue).toBeCloseTo(5);
+    // G=2, SH=4, shotRate=0.5 -> 2 + 0.5*5 = 4.5(ドライブ突破は含まない)
+    expect(decisiveness.rawValue).toBeCloseTo(4.5);
   });
 
-  it("創出力 = A + DE(退水/ペナルティ誘発、subtype問わず) + マーク外し", () => {
+  it("創出力 = A + DE + マーク外し + スクリーン + ドライブ突破", () => {
     const events = [
       ev({ type: "assist", player_id: "p1" }),
       ev({ type: "assist", player_id: "p1" }),
       ev({ type: "drawn_exclusion", player_id: "p1", subtype: "exclusion" }),
       ev({ type: "drawn_exclusion", player_id: "p1", subtype: "penalty" }),
       ev({ type: "off_ball_move", player_id: "p1" }),
+      ev({ type: "screen", player_id: "p1" }),
+      ev({ type: "drive_break", player_id: "p1" }),
     ];
     const [p1] = buildPerformanceProfiles(events, roster);
     const creativity = p1.axes.find((a) => a.key === "creativity")!;
-    expect(creativity.rawValue).toBeCloseTo(2 + 2 + 1); // A=2, DE=2, OBM=1
+    // A=2, DE=2, OBM=1, SCR=1, DB=1 -> 7
+    expect(creativity.rawValue).toBeCloseTo(7);
+  });
+
+  it("展開力 = 縦パス + 速攻参加 + サイド展開 + アシスト*0.5", () => {
+    const events = [
+      ev({ type: "key_pass", player_id: "p1" }),
+      ev({ type: "counter_join", player_id: "p1" }),
+      ev({ type: "side_switch", player_id: "p1" }),
+      ev({ type: "assist", player_id: "p1" }),
+    ];
+    const [p1] = buildPerformanceProfiles(events, roster);
+    const buildup = p1.axes.find((a) => a.key === "buildup")!;
+    // KP=1, CJ=1, SS=1, A=1 -> 1+1+1+0.5 = 3.5
+    expect(buildup.rawValue).toBeCloseTo(3.5);
   });
 
   it("全6軸が実データ算出(approx=false)になった", () => {
@@ -60,40 +76,31 @@ describe("buildPerformanceProfiles", () => {
     }
   });
 
-  it("展開力 = 縦パス + 速攻参加 + アシスト*0.5", () => {
-    const events = [
-      ev({ type: "key_pass", player_id: "p1" }),
-      ev({ type: "key_pass", player_id: "p1" }),
-      ev({ type: "counter_join", player_id: "p1" }),
-      ev({ type: "assist", player_id: "p1" }),
-    ];
-    const [p1] = buildPerformanceProfiles(events, roster);
-    const buildup = p1.axes.find((a) => a.key === "buildup")!;
-    // KP=2, CJ=1, A=1 -> 2 + 1 + 0.5 = 3.5
-    expect(buildup.rawValue).toBeCloseTo(3.5);
-  });
-
-  it("ボール奪取 = カット + リバウンド奪取", () => {
+  it("判断力(steal) = カット + スティール + リバウンド奪取", () => {
     const events = [
       ev({ type: "cut", player_id: "p1" }),
       ev({ type: "cut", player_id: "p1" }),
+      ev({ type: "steal_ball", player_id: "p1" }),
       ev({ type: "rebound_win", player_id: "p1" }),
     ];
     const [p1] = buildPerformanceProfiles(events, roster);
     const steal = p1.axes.find((a) => a.key === "steal")!;
-    expect(steal.rawValue).toBeCloseTo(3); // C=2, RW=1
+    expect(steal.label).toBe("判断力");
+    expect(steal.rawValue).toBeCloseTo(4); // C=2, STL=1, RW=1
   });
 
-  it("対人守備 = 対人守備成功 - 被退水*0.5、負にはならずclamp", () => {
+  it("守備力(defense) = 対人守備 + シュートブロック - 被退水*0.5、負はclamp", () => {
     const events = [
       ev({ type: "defense_stop", player_id: "p1" }),
       ev({ type: "defense_stop", player_id: "p1" }),
+      ev({ type: "shot_block", player_id: "p1" }),
       ev({ type: "exclusion", player_id: "p1" }),
     ];
     const [p1] = buildPerformanceProfiles(events, roster);
     const defense = p1.axes.find((a) => a.key === "defense")!;
-    // DS=2, EX=1 -> 2 - 0.5 = 1.5
-    expect(defense.rawValue).toBeCloseTo(1.5);
+    expect(defense.label).toBe("守備力");
+    // DS=2, SB=1, EX=1 -> 2 + 1 - 0.5 = 2.5
+    expect(defense.rawValue).toBeCloseTo(2.5);
   });
 
   it("効率性は負になりうる(生値はclampしない、Tには反映される)", () => {

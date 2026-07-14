@@ -128,6 +128,9 @@ try {
 
   await step("3タップでシュート記録(センター→ゴール) スコア1-0", async () => {
     await page.click('button:has-text("スタッツ管理者")'); // 1タップ目: 選手
+    // シュート種別に ミドル・バック が増えていること
+    await page.waitForSelector('button:has-text("ミドル")');
+    await page.waitForSelector('button:has-text("バック")');
     await page.click('button:has-text("センター")'); // 2タップ目: 種別
     await page.waitForTimeout(350); // タップロック解除待ち
     await page.click('button:has-text("◯ゴール")'); // 3タップ目: 結果
@@ -148,13 +151,38 @@ try {
     }
   });
 
-  await step("E誘発でEが自動ON", async () => {
+  await step("E誘発でEが自動ON(誘発もアシスト紐付けパネルが出る→なしで閉じる)", async () => {
     await page.click('button:has-text("選手ビー")');
     await page.waitForTimeout(350);
     await page.click('button:has-text("E誘発")');
     await page.waitForTimeout(350);
     const toggle = await page.textContent('[data-testid="extra-toggle"]');
     if (!toggle.includes("ON")) throw new Error(`EがONにならない: ${toggle}`);
+    // 退水誘発でもアシストパネルが出る
+    await page.waitForSelector('[data-testid="assist-panel"]');
+    if (!(await page.textContent('[data-testid="assist-panel"]')).includes("退水誘発")) {
+      throw new Error("誘発のアシストパネル文言が想定外");
+    }
+    await page.click('button:has-text("アシストなしで閉じる")');
+    await page.waitForTimeout(350);
+  });
+
+  await step("退水誘発をUndoするとEも連動してOFFになる→やり直してON", async () => {
+    // 直前のイベント(E誘発)をUndo → Eが自動でOFFに戻る
+    await page.click('button:has-text("↩ 元に戻す")');
+    await page.waitForTimeout(350);
+    let toggle = await page.textContent('[data-testid="extra-toggle"]');
+    if (!toggle.includes("OFF")) throw new Error(`誘発Undoでも E がOFFにならない: ${toggle}`);
+    // やり直す(以降の集計のため E誘発 を1件に戻す)
+    await page.click('button:has-text("選手ビー")');
+    await page.waitForTimeout(350);
+    await page.click('button:has-text("E誘発")');
+    await page.waitForTimeout(350);
+    toggle = await page.textContent('[data-testid="extra-toggle"]');
+    if (!toggle.includes("ON")) throw new Error(`やり直しでEがONにならない: ${toggle}`);
+    await page.waitForSelector('[data-testid="assist-panel"]');
+    await page.click('button:has-text("アシストなしで閉じる")');
+    await page.waitForTimeout(350);
   });
 
   await step("E中のゴールでE自動OFF(スコア2-0)", async () => {

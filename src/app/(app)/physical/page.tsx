@@ -145,7 +145,7 @@ export default async function PhysicalPage({
 
       <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-900">
         📊 下のランキングで選手名をタップすると、その選手の
-        <span className="font-semibold">レーダーチャート(6軸)</span>
+        <span className="font-semibold">フィジカル評価(レーダー)</span>
         と記録の推移が見られます。
       </p>
 
@@ -199,7 +199,7 @@ export default async function PhysicalPage({
       <Card className="space-y-2">
         <h2 className="text-sm font-semibold text-slate-600">総合フィジカルスコア ランキング</h2>
         <p className="text-xs text-slate-400">
-          レーダー6軸(筋力・体幹・持久力・スプリント力・投力・精度)のチーム内偏差値の平均です。
+          フィジカル評価(筋力・体幹・持久力・スプリント力・投力・精度)のチーム内偏差値の平均です。
         </p>
         {overallRanking.length === 0 ? (
           <p className="text-sm text-slate-400">まだ記録がありません</p>

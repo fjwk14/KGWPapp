@@ -120,12 +120,19 @@ try {
     if ((await analyst.locator('[data-testid="extra-toggle"]').count()) > 0) {
       throw new Error("Eトグルが見えている");
     }
-    // 選手をタップ → 分析3項目のパネル
+    // 選手をタップ → 分析パネル(O/Dグループ)
     await analyst.click('button:has-text("併用選手")');
     await analyst.waitForSelector("text=縦パス");
     const panel = await analyst.textContent("body");
     if (panel.includes("センター") || panel.includes("6m")) {
       throw new Error("分析モードにシュート種別が見えている");
+    }
+    // O/D グループと新項目が揃っている
+    for (const label of [
+      "O(オフェンス)", "D(ディフェンス)",
+      "サイド展開", "スクリーン", "シュートブロック", "スティール",
+    ]) {
+      if (!panel.includes(label)) throw new Error(`分析パネルに「${label}」がない`);
     }
     await analyst.click('button:has-text("縦パス")');
     await analyst.waitForTimeout(350);
@@ -220,7 +227,8 @@ try {
     await page.waitForSelector("text=プレー総合スコア");
     const body = (await page.textContent("body")).replace(/\s+/g, "");
     if (!body.includes("創出力")) throw new Error("創出力軸が表示されていない");
-    if (!body.includes("ボール奪取")) throw new Error("ボール奪取軸が表示されていない");
+    if (!body.includes("判断力")) throw new Error("判断力軸が表示されていない");
+    if (!body.includes("守備力")) throw new Error("守備力軸が表示されていない");
   });
 
   console.log(`\n=== 分析モード・併用役職検証: ${ok}/${total} passed ===`);

@@ -22,18 +22,25 @@ export type StatsEventType =
   | "gk_faced"
   | "attack_end_no_shot"
   | "opponent_goal"
-  // 展開力・対人守備の実データ化(0014で追加)
+  // 展開力・守備力の実データ化(0014で追加)
   | "key_pass" // 縦パス(攻撃の起点)
   | "counter_join" // 速攻参加
   | "defense_stop" // 対人守備成功
   // 分析チーム記録項目の拡充(0018で追加)
   | "off_ball_move" // マーク外し(創出力)
-  | "rebound_win" // リバウンド奪取(ボール奪取)
-  | "drive_break"; // ドライブ突破(決定力)
+  | "rebound_win" // リバウンド奪取(判断力)
+  | "drive_break" // ドライブ突破(創出力)
+  // 分析チーム記録項目のO/D整理(0019で追加)
+  | "side_switch" // サイド展開(展開力)
+  | "screen" // スクリーン(創出力)
+  | "shot_block" // シュートブロック(守備力)
+  | "steal_ball"; // スティール(判断力)
 
 export type ShotSubtype =
   | "center"
   | "drive"
+  | "middle"
+  | "back"
   | "one_touch"
   | "penalty"
   | "six_m"
@@ -66,6 +73,8 @@ export interface RosterEntry {
 export const SHOT_SUBTYPE_LABELS: Record<ShotSubtype, string> = {
   center: "センター",
   drive: "ドライブ",
+  middle: "ミドル",
+  back: "バック",
   one_touch: "ワンタッチ",
   penalty: "ペナルティ",
   six_m: "6m",
@@ -122,6 +131,14 @@ export function describeEvent(
       return `${who}: リバウンド奪取`;
     case "drive_break":
       return `${who}: ドライブ突破`;
+    case "side_switch":
+      return `${who}: サイド展開`;
+    case "screen":
+      return `${who}: スクリーン`;
+    case "shot_block":
+      return `${who}: シュートブロック`;
+    case "steal_ball":
+      return `${who}: スティール`;
     case "miss":
       return `${who}: ${MISS_SUBTYPE_LABELS[e.subtype as MissSubtype] ?? "ミス"}`;
     case "gk_faced":
@@ -140,6 +157,8 @@ export function describeEvent(
 export const SHOT_COLUMNS = [
   "center",
   "drive",
+  "middle",
+  "back",
   "one_touch",
   "penalty",
   "extra",
@@ -151,6 +170,8 @@ export type ShotColumn = (typeof SHOT_COLUMNS)[number];
 export const SHOT_COLUMN_LABELS: Record<ShotColumn, string> = {
   center: "センター",
   drive: "ドライブ",
+  middle: "ミドル",
+  back: "バック",
   one_touch: "ワンタッチ",
   penalty: "P",
   extra: "E",

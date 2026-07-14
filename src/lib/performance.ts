@@ -19,6 +19,10 @@ interface RawPlayerStats {
   OBM: number; // マーク外し(分析チーム記録・0018)
   RW: number; // リバウンド奪取(分析チーム記録・0018)
   DB: number; // ドライブ突破(分析チーム記録・0018)
+  SS: number; // サイド展開(分析チーム記録・0019)
+  SCR: number; // スクリーン(分析チーム記録・0019)
+  SB: number; // シュートブロック(分析チーム記録・0019)
+  STL: number; // スティール(分析チーム記録・0019)
 }
 
 function buildRawPlayerStats(
@@ -33,6 +37,7 @@ function buildRawPlayerStats(
         user_id: userId,
         G: 0, SH: 0, A: 0, DE: 0, C: 0, EX: 0, OF: 0, MISS: 0,
         KP: 0, CJ: 0, DS: 0, OBM: 0, RW: 0, DB: 0,
+        SS: 0, SCR: 0, SB: 0, STL: 0,
       };
       stats.set(userId, s);
     }
@@ -86,6 +91,18 @@ function buildRawPlayerStats(
       case "drive_break":
         s.DB += 1;
         break;
+      case "side_switch":
+        s.SS += 1;
+        break;
+      case "screen":
+        s.SCR += 1;
+        break;
+      case "shot_block":
+        s.SB += 1;
+        break;
+      case "steal_ball":
+        s.STL += 1;
+        break;
     }
   }
 
@@ -106,8 +123,8 @@ export const PERFORMANCE_AXIS_LABELS: Record<PerformanceAxisKey, string> = {
   decisiveness: "決定力",
   creativity: "創出力",
   buildup: "展開力",
-  defense: "対人守備",
-  steal: "ボール奪取",
+  defense: "守備力",
+  steal: "判断力",
   efficiency: "効率性",
 };
 
@@ -124,16 +141,17 @@ export const PERFORMANCE_AXIS_APPROX: Record<PerformanceAxisKey, boolean> = {
 function rawAxisValues(s: RawPlayerStats): Record<PerformanceAxisKey, number> {
   const shotRate = s.SH > 0 ? s.G / s.SH : 0;
   return {
-    // 決定力: 得点 + シュート決定率 + ドライブ突破(決定機まで運んだ回数、得点より軽め)
-    decisiveness: s.G + shotRate * 5 + s.DB * 0.5,
-    // 創出力: アシスト + 退水誘発 + マーク外し(得点機会を作るオフボールの動き)
-    creativity: s.A + s.DE + s.OBM,
-    // 展開力: 縦パス(起点)+ 速攻参加 + アシストの一部
-    buildup: s.KP + s.CJ + s.A * 0.5,
-    // 対人守備: 対人守備成功が主。被退水はマイナス
-    defense: Math.max(0, s.DS - s.EX * 0.5),
-    // ボール奪取: カット(パスカット)+ リバウンド奪取(こぼれ球回収)
-    steal: s.C + s.RW,
+    // 決定力: 得点 + シュート決定率(フィニッシュそのもの)
+    decisiveness: s.G + shotRate * 5,
+    // 創出力: アシスト + 退水誘発 + マーク外し + スクリーン + ドライブ突破
+    //   (味方の得点機会を作るオフボール/仕掛け)
+    creativity: s.A + s.DE + s.OBM + s.SCR + s.DB,
+    // 展開力: 縦パス(起点)+ 速攻参加 + サイド展開 + アシストの一部
+    buildup: s.KP + s.CJ + s.SS + s.A * 0.5,
+    // 守備力: 対人守備 + シュートブロック。被退水はマイナス
+    defense: Math.max(0, s.DS + s.SB - s.EX * 0.5),
+    // 判断力: 相手の攻撃を読む力。カット + スティール + リバウンド奪取
+    steal: s.C + s.STL + s.RW,
     efficiency: shotRate * 10 - (s.MISS + s.OF),
   };
 }

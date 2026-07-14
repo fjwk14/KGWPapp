@@ -45,17 +45,17 @@ export const PHYSICAL_METRICS: MetricDef[] = [
   { key: "vertical", label: "垂直到達(ジャンプ)", unit: "cm", higherIsBetter: true, axis: "strength" },
   // 体幹: シュート・ディフェンス時の姿勢維持
   { key: "plank", label: "体幹保持(加重プランク)", unit: "秒", higherIsBetter: true, axis: "core" },
-  { key: "adductor", label: "内転筋(コペンハーゲン)", unit: "秒", higherIsBetter: true, axis: "core" },
+  { key: "adductor", label: "内もも保持(サイドプランク)", unit: "秒", higherIsBetter: true, axis: "core" },
   // 持久力: 4Q泳ぎ切る力・巻き足の持続
-  { key: "endurance200", label: "200m持久", unit: "秒", higherIsBetter: false, axis: "endurance" },
+  { key: "endurance400", label: "400m持久", unit: "秒", higherIsBetter: false, axis: "endurance" },
   { key: "eggbeater_hold", label: "巻き足キープ", unit: "秒", higherIsBetter: true, axis: "endurance" },
-  // スプリント力: カウンターの初速・戻りの速さ・横の機動力
+  // スプリント力: カウンターの初速・戻りの速さ・切り返しの機動力
   { key: "sprint10", label: "10mスプリント", unit: "秒", higherIsBetter: false, axis: "sprint" },
   { key: "sprint25", label: "25mスプリント", unit: "秒", higherIsBetter: false, axis: "sprint" },
-  { key: "side5m", label: "巻き足横移動5m", unit: "秒", higherIsBetter: false, axis: "sprint" },
+  { key: "cutback3", label: "切り返し3往復", unit: "秒", higherIsBetter: false, axis: "sprint" },
   // 投力: シュート・ロングパスの球速
   { key: "throw_max", label: "最大スロー速度", unit: "km/h", higherIsBetter: true, axis: "throw" },
-  { key: "throw_pass", label: "パス後スロー速度", unit: "km/h", higherIsBetter: true, axis: "throw" },
+  { key: "throw_hantsu", label: "ハンツー速度", unit: "km/h", higherIsBetter: true, axis: "throw" },
   // 精度: 狙ったところに投げる力
   { key: "shoot_accuracy", label: "シュート精度", unit: "/10", higherIsBetter: true, axis: "accuracy" },
   { key: "pass_accuracy", label: "パス精度", unit: "/10", higherIsBetter: true, axis: "accuracy" },
