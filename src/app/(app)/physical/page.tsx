@@ -85,7 +85,7 @@ export default async function PhysicalPage({
           </p>
           <form action={recordPhysicalMeasurements} className="space-y-3">
             <div className="flex gap-2">
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <Label htmlFor="user_id">選手</Label>
                 <Select name="user_id" id="user_id" required className="text-sm">
                   {[...roster]
@@ -97,14 +97,14 @@ export default async function PhysicalPage({
                     ))}
                 </Select>
               </div>
-              <div className="w-36 shrink-0">
+              <div className="w-32 shrink-0">
                 <Label htmlFor="measured_on">測定日</Label>
                 <Input
                   type="date"
                   name="measured_on"
                   id="measured_on"
                   defaultValue={new Date().toISOString().slice(0, 10)}
-                  className="text-sm"
+                  className="text-sm appearance-none px-2"
                 />
               </div>
             </div>
