@@ -119,6 +119,9 @@ try {
     const gkRow = page.locator("li", { hasText: "キーパーシー" });
     await gkRow.locator('button:has-text("GK")').click();
     await page.click('button:has-text("この3人で開始")');
+    // 管理者は両モードの権限を持つため、記録モード選択が出る → マネージャー記録
+    await page.waitForSelector('[data-testid="mode-manager"]');
+    await page.click('[data-testid="mode-manager"]');
     await page.waitForSelector('[data-testid="score"]');
     await page.screenshot({ path: `${SHOT}/01-live-start.png`, fullPage: true });
   });
@@ -239,6 +242,8 @@ try {
 
   await step("リロード後もサーバー由来のイベントでスコア維持(2-1)", async () => {
     await page.reload();
+    await page.waitForSelector('[data-testid="mode-manager"]');
+    await page.click('[data-testid="mode-manager"]');
     await page.waitForSelector('[data-testid="score"]');
     await scoreIs("2 - 1");
     const body = await page.textContent("body");

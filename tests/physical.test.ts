@@ -61,8 +61,8 @@ describe("buildPhysicalProfiles", () => {
     ];
     const profiles = buildPhysicalProfiles(rows, roster);
     const p1 = profiles.find((p) => p.user_id === "p1")!;
-    const axis = p1.axes.find((a) => a.key === "vertical")!;
-    expect(axis.value).toBe(60);
+    const metric = p1.metrics.find((m) => m.key === "vertical")!;
+    expect(metric.value).toBe(60);
   });
 
   it("higherIsBetter=falseの項目(10mスプリント)は速い(小さい)方がTが高い", () => {
@@ -71,8 +71,12 @@ describe("buildPhysicalProfiles", () => {
       row({ user_id: "p2", metric: "sprint10", value: 6.0 }),
     ];
     const profiles = buildPhysicalProfiles(rows, roster);
-    const p1Axis = profiles.find((p) => p.user_id === "p1")!.axes.find((a) => a.key === "sprint10")!;
-    const p2Axis = profiles.find((p) => p.user_id === "p2")!.axes.find((a) => a.key === "sprint10")!;
+    const p1Metric = profiles.find((p) => p.user_id === "p1")!.metrics.find((m) => m.key === "sprint10")!;
+    const p2Metric = profiles.find((p) => p.user_id === "p2")!.metrics.find((m) => m.key === "sprint10")!;
+    expect(p1Metric.teamT!).toBeGreaterThan(p2Metric.teamT!);
+    // 軸(スプリント力)にも反映される
+    const p1Axis = profiles.find((p) => p.user_id === "p1")!.axes.find((a) => a.key === "sprint")!;
+    const p2Axis = profiles.find((p) => p.user_id === "p2")!.axes.find((a) => a.key === "sprint")!;
     expect(p1Axis.teamT).toBeGreaterThan(p2Axis.teamT);
   });
 
@@ -82,8 +86,8 @@ describe("buildPhysicalProfiles", () => {
     ];
     const profiles = buildPhysicalProfiles(rows, roster);
     const p3 = profiles.find((p) => p.user_id === "p3")!;
-    const axis = p3.axes.find((a) => a.key === "vertical")!;
-    expect(axis.positionT).toBeNull(); // ポジション1(field_position=1)はp3のみ
+    const metric = p3.metrics.find((m) => m.key === "vertical")!;
+    expect(metric.positionT).toBeNull(); // ポジション1(field_position=1)はp3のみ
   });
 
   it("同ポジションが2人以上いればpositionTが計算される", () => {
@@ -92,21 +96,45 @@ describe("buildPhysicalProfiles", () => {
       row({ user_id: "p2", metric: "vertical", value: 60 }),
     ];
     const profiles = buildPhysicalProfiles(rows, roster);
-    const p1 = profiles.find((p) => p.user_id === "p1")!.axes.find((a) => a.key === "vertical")!;
+    const p1 = profiles.find((p) => p.user_id === "p1")!.metrics.find((m) => m.key === "vertical")!;
     expect(p1.positionT).not.toBeNull();
   });
 
-  it("未測定はvalue=null・teamT=50", () => {
+  it("未測定は項目T=null・軸T=50・総合50", () => {
     const profiles = buildPhysicalProfiles([], roster);
     const p1 = profiles.find((p) => p.user_id === "p1")!;
+    for (const m of p1.metrics) {
+      expect(m.value).toBeNull();
+      expect(m.teamT).toBeNull();
+    }
     for (const axis of p1.axes) {
-      expect(axis.value).toBeNull();
       expect(axis.teamT).toBe(50);
+      expect(axis.measuredCount).toBe(0);
     }
     expect(p1.overallPhysicalScore).toBe(50);
   });
 
-  it("overallPhysicalScoreは7軸Tの平均を0〜100に丸める", () => {
+  it("軸Tは軸内の測定済み項目Tの平均(未測定項目は無視)", () => {
+    // 筋力軸: pullupsのみ測定 → 軸T = pullupsのT
+    const rows: PhysicalMeasurementRow[] = [
+      row({ user_id: "p1", metric: "pullups", value: 20 }),
+      row({ user_id: "p2", metric: "pullups", value: 10 }),
+    ];
+    const profiles = buildPhysicalProfiles(rows, roster);
+    const p1 = profiles.find((p) => p.user_id === "p1")!;
+    const strengthAxis = p1.axes.find((a) => a.key === "strength")!;
+    const pullups = p1.metrics.find((m) => m.key === "pullups")!;
+    expect(strengthAxis.measuredCount).toBe(1);
+    expect(strengthAxis.teamT).toBeCloseTo(pullups.teamT!);
+  });
+
+  it("6軸(筋力/体幹/持久力/スプリント力/投力/精度)が揃っている", () => {
+    const profiles = buildPhysicalProfiles([], roster);
+    const labels = profiles[0].axes.map((a) => a.label);
+    expect(labels).toEqual(["筋力", "体幹", "持久力", "スプリント力", "投力", "精度"]);
+  });
+
+  it("overallPhysicalScoreは6軸Tの平均を0〜100に丸める", () => {
     const rows: PhysicalMeasurementRow[] = [
       row({ user_id: "p1", metric: "vertical", value: 100 }),
       row({ user_id: "p2", metric: "vertical", value: 0 }),

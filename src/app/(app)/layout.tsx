@@ -15,7 +15,7 @@ export default async function AppLayout({
     { href: "/matches", label: "試合", icon: "🎬" },
     { href: "/practices", label: "練習", icon: "🏊" },
     { href: "/rankings", label: "ランキング", icon: "🏆" },
-    ...(can.manageTeam(membership.role)
+    ...(can.manageTeam(membership)
       ? [{ href: "/admin", label: "設定", icon: "⚙️" }]
       : []),
   ];

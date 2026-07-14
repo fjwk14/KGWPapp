@@ -56,8 +56,8 @@ export async function updateMatch(formData: FormData) {
   const matchId = String(formData.get("match_id"));
   const back = `/matches/${matchId}/edit`;
 
-  if (!can.editMatch(membership.role)) {
-    redirect(`${back}?error=${encodeURIComponent("編集の権限がありません(戦術班以上)")}`);
+  if (!can.editMatch(membership)) {
+    redirect(`${back}?error=${encodeURIComponent("編集の権限がありません(戦術チーム以上)")}`);
   }
 
   const parsed = matchSchema.safeParse({
@@ -171,7 +171,7 @@ export async function deleteMatch(formData: FormData) {
   const matchId = String(formData.get("match_id"));
   const back = `/matches/${matchId}/delete`;
 
-  if (!can.deleteMatch(membership.role)) {
+  if (!can.deleteMatch(membership)) {
     redirect(`/matches/${matchId}?error=${encodeURIComponent("削除の権限がありません(管理者・マネージャーのみ)")}`);
   }
 

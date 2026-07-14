@@ -18,7 +18,7 @@ export default async function DeleteMatchPage({
   const { id } = await params;
   const { error } = await searchParams;
   const { membership } = await requireMembership();
-  if (!can.deleteMatch(membership.role)) redirect(`/matches/${id}`);
+  if (!can.deleteMatch(membership)) redirect(`/matches/${id}`);
 
   const supabase = await createClient();
   const { data: match } = await supabase

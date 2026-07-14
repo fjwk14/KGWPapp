@@ -16,7 +16,7 @@ function backTo(path: string, error?: string): never {
 // 空欄の項目はスキップし、入力された項目だけ physical_measurements に複数行insertする。
 export async function recordPhysicalMeasurements(formData: FormData) {
   const { team, userId, membership } = await requireMembership();
-  if (!can.recordPhysical(membership.role)) {
+  if (!can.recordPhysical(membership)) {
     backTo("/physical", "測定値の記録には権限が必要です(マネージャー以上)");
   }
 
@@ -72,7 +72,7 @@ export async function recordPhysicalMeasurements(formData: FormData) {
 // 記録済みの測定値を1件編集する(スタッフのみ)。
 export async function updatePhysicalMeasurement(formData: FormData) {
   const { membership } = await requireMembership();
-  if (!can.recordPhysical(membership.role)) {
+  if (!can.recordPhysical(membership)) {
     backTo("/physical", "測定値の編集には権限が必要です(マネージャー以上)");
   }
 
@@ -111,7 +111,7 @@ export async function updatePhysicalMeasurement(formData: FormData) {
 // 記録済みの測定値を1件削除する(スタッフのみ)。
 export async function deletePhysicalMeasurement(formData: FormData) {
   const { membership } = await requireMembership();
-  if (!can.recordPhysical(membership.role)) {
+  if (!can.recordPhysical(membership)) {
     backTo("/physical", "測定値の削除には権限が必要です(マネージャー以上)");
   }
 

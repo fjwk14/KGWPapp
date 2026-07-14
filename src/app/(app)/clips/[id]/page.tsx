@@ -92,7 +92,7 @@ export default async function ClipDetailPage({
     users: { name: string } | null;
   })[];
   const templates = (templatesData ?? []) as TagTemplate[];
-  const isStaff = can.tagClip(membership.role);
+  const isStaff = can.tagClip(membership);
 
   const attached = new Set(tags.map((t) => `${t.tag_type}:${t.tag_value}`));
   const available = templates.filter(

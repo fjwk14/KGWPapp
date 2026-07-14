@@ -49,7 +49,7 @@ export default async function PracticesPage({
     summaryByPractice.set(a.practice_id, s);
   }
 
-  const canRecord = can.recordPractice(membership.role);
+  const canRecord = can.recordPractice(membership);
   const today = new Date().toISOString().slice(0, 10);
 
   return (

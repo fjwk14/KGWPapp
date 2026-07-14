@@ -41,7 +41,7 @@ export default async function MatchesPage({
     <>
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">試合一覧</h1>
-        {can.createMatch(membership.role) && (
+        {can.createMatch(membership) && (
           <LinkButton href="/matches/new" className="min-h-9 px-3 text-xs">
             + 試合登録
           </LinkButton>

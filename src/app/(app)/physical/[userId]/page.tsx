@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button, Card, ErrorBanner, Input, Select } from "@/components/ui";
@@ -38,7 +39,7 @@ export default async function PhysicalDetailPage({
   const { userId } = await params;
   const { metric: metricParam, ok, error } = await searchParams;
   const { team, membership } = await requireMembership();
-  const canRecord = can.recordPhysical(membership.role);
+  const canRecord = can.recordPhysical(membership);
   const supabase = await createClient();
 
   const [{ data: membersData }, { data: rowsData }, { data: eventsData }] =
@@ -133,11 +134,11 @@ export default async function PhysicalDetailPage({
 
       <Card className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-600">
-          フィジカル7軸(本人 vs 同ポジ平均)
+          フィジカル6軸(本人 vs 同ポジ平均)
         </h2>
         <p className="text-xs text-slate-400">
-          測定値を記録するほど各軸(チーム内での偏差値)が更新されます。
-          チーム内偏差値は2人以上の記録がある項目で差が出ます。
+          軸の値=その軸に属する測定項目のチーム内偏差値の平均です。
+          測定値を記録するほど各軸が更新されます(2人以上の記録がある項目で差が出ます)。
         </p>
         <RadarChart
           axes={profile.axes.map((a) => ({
@@ -157,15 +158,41 @@ export default async function PhysicalDetailPage({
               </tr>
             </thead>
             <tbody>
-              {profile.axes.map((a) => (
-                <tr key={a.key} className="border-b border-slate-100">
-                  <td className="py-1 text-left font-medium">{a.label}</td>
-                  <td className="tabular-nums">{fmt(a.value)}</td>
-                  <td className="tabular-nums font-semibold">{Math.round(a.teamT)}</td>
-                  <td className="tabular-nums text-slate-500">
-                    {a.positionT == null ? "-" : Math.round(a.positionT)}
-                  </td>
-                </tr>
+              {profile.axes.map((axis) => (
+                <Fragment key={axis.key}>
+                  {/* 軸の見出し行(軸Tも表示) */}
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <td className="py-1 text-left font-bold text-brand-700">
+                      {axis.label}
+                    </td>
+                    <td />
+                    <td className="tabular-nums font-bold text-brand-700">
+                      {Math.round(axis.teamT)}
+                    </td>
+                    <td className="tabular-nums text-slate-500">
+                      {axis.positionT == null ? "-" : Math.round(axis.positionT)}
+                    </td>
+                  </tr>
+                  {profile.metrics
+                    .filter((m) => m.axis === axis.key)
+                    .map((m) => (
+                      <tr key={m.key} className="border-b border-slate-100">
+                        <td className="py-1 pl-3 text-left font-medium">{m.label}</td>
+                        <td className="tabular-nums">
+                          {fmt(m.value)}
+                          {m.value != null && (
+                            <span className="ml-0.5 text-slate-400">{m.unit}</span>
+                          )}
+                        </td>
+                        <td className="tabular-nums font-semibold">
+                          {m.teamT == null ? "-" : Math.round(m.teamT)}
+                        </td>
+                        <td className="tabular-nums text-slate-500">
+                          {m.positionT == null ? "-" : Math.round(m.positionT)}
+                        </td>
+                      </tr>
+                    ))}
+                </Fragment>
               ))}
             </tbody>
           </table>

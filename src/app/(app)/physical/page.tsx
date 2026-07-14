@@ -6,6 +6,7 @@ import { can } from "@/lib/permissions";
 import {
   PHYSICAL_METRICS,
   PHYSICAL_METRIC_MAP,
+  RADAR_AXES,
   buildMetricRanking,
   buildOverallRanking,
   buildPhysicalProfiles,
@@ -77,7 +78,7 @@ export default async function PhysicalPage({
       </div>
       <ErrorBanner message={error} />
 
-      {can.recordPhysical(membership.role) && (
+      {can.recordPhysical(membership) && (
         <Card className="space-y-3">
           <h2 className="text-sm font-semibold text-slate-600">測定値を記録</h2>
           <p className="text-xs text-slate-400">
@@ -109,25 +110,31 @@ export default async function PhysicalPage({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              {PHYSICAL_METRICS.map((m) => (
-                <div key={m.key}>
-                  <Label htmlFor={m.key} className="text-xs">
-                    {m.label}
-                    <span className="ml-1 text-slate-400">({m.unit})</span>
-                  </Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    inputMode="decimal"
-                    name={m.key}
-                    id={m.key}
-                    placeholder="未入力"
-                    className="text-sm tabular-nums"
-                  />
+            {/* レーダー6軸ごとにグループ化して入力しやすくする */}
+            {RADAR_AXES.map((axis) => (
+              <div key={axis.key}>
+                <p className="mb-1 text-xs font-bold text-brand-700">{axis.label}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {PHYSICAL_METRICS.filter((m) => m.axis === axis.key).map((m) => (
+                    <div key={m.key}>
+                      <Label htmlFor={m.key} className="text-xs">
+                        {m.label}
+                        <span className="ml-1 text-slate-400">({m.unit})</span>
+                      </Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        inputMode="decimal"
+                        name={m.key}
+                        id={m.key}
+                        placeholder="未入力"
+                        className="text-sm tabular-nums"
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
 
             <Button type="submit" className="w-full">
               記録する
@@ -138,7 +145,7 @@ export default async function PhysicalPage({
 
       <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-900">
         📊 下のランキングで選手名をタップすると、その選手の
-        <span className="font-semibold">レーダーチャート(7軸)</span>
+        <span className="font-semibold">レーダーチャート(6軸)</span>
         と記録の推移が見られます。
       </p>
 
@@ -192,7 +199,7 @@ export default async function PhysicalPage({
       <Card className="space-y-2">
         <h2 className="text-sm font-semibold text-slate-600">総合フィジカルスコア ランキング</h2>
         <p className="text-xs text-slate-400">
-          レーダー7軸(到達高・キープ・10m・持久・スロー・精度・引く力)のチーム内偏差値の平均です。
+          レーダー6軸(筋力・体幹・持久力・スプリント力・投力・精度)のチーム内偏差値の平均です。
         </p>
         {overallRanking.length === 0 ? (
           <p className="text-sm text-slate-400">まだ記録がありません</p>

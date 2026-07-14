@@ -30,7 +30,7 @@ export default async function AdminPage({
 }) {
   const { error, ok } = await searchParams;
   const { team, membership } = await requireMembership();
-  if (!can.manageTeam(membership.role)) redirect("/dashboard");
+  if (!can.manageTeam(membership)) redirect("/dashboard");
 
   const supabase = await createClient();
   const { data: membersData } = await supabase
@@ -143,10 +143,10 @@ export default async function AdminPage({
                     ))}
                   </Select>
                 </div>
-                {/* 役職の併用は管理者のみ(例: 管理者 兼 主将)。primary=admin のときだけ有効 */}
+                {/* 役職の併用は全ロール可(例: 選手 兼 分析チーム)。権限は両方の和集合 */}
                 <div>
                   <label className="text-xs text-slate-400">
-                    併用役職(管理者のみ・任意)
+                    併用役職(任意・権限は両方に効きます)
                   </label>
                   <Select
                     name={`secondary_role_${m.id}`}

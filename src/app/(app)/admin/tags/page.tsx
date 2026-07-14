@@ -23,7 +23,7 @@ export default async function TagTemplatesPage({
 }) {
   const { error } = await searchParams;
   const { team, membership } = await requireMembership();
-  if (!can.manageTagTemplates(membership.role)) redirect("/dashboard");
+  if (!can.manageTagTemplates(membership)) redirect("/dashboard");
 
   const supabase = await createClient();
   const { data } = await supabase

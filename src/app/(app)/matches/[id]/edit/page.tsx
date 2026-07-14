@@ -26,7 +26,7 @@ export default async function EditMatchPage({
   const { id } = await params;
   const { error } = await searchParams;
   const { membership } = await requireMembership();
-  if (!can.editMatch(membership.role)) redirect(`/matches/${id}`);
+  if (!can.editMatch(membership)) redirect(`/matches/${id}`);
 
   const supabase = await createClient();
   const { data: match } = await supabase
@@ -180,7 +180,7 @@ export default async function EditMatchPage({
         ※ 動画は試合詳細の「試合動画」欄で追加・削除できます。
       </p>
 
-      {can.deleteMatch(membership.role) && (
+      {can.deleteMatch(membership) && (
         <Card className="space-y-2 border-red-200">
           <h2 className="text-sm font-semibold text-red-700">試合の削除</h2>
           <p className="text-xs text-slate-500">

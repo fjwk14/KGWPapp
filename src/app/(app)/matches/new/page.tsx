@@ -15,8 +15,8 @@ export default async function NewMatchPage({
 }) {
   const params = await searchParams;
   const { membership } = await requireMembership();
-  if (!can.createMatch(membership.role)) redirect("/matches");
-  const canLive = can.recordStats(membership.role);
+  if (!can.createMatch(membership)) redirect("/matches");
+  const canLive = can.recordStats(membership);
 
   return (
     <>

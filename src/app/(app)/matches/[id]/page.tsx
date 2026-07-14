@@ -63,7 +63,7 @@ export default async function MatchDetailPage({
       );
     allTags = (tagsData ?? []) as ClipTag[];
   }
-  const isStaff = can.createClip(membership.role);
+  const isStaff = can.createClip(membership);
 
   return (
     <>
@@ -114,7 +114,7 @@ export default async function MatchDetailPage({
 
       {/* 当日: 試合記録 → 後日: 動画・クリップ・分析 の順 */}
       <div className="grid grid-cols-2 gap-2">
-        {can.recordStats(membership.role) && (
+        {(can.recordStats(membership) || can.recordAnalysis(membership)) && (
           <LinkButton href={`/matches/${m.id}/live`} className="bg-rose-600 hover:bg-rose-700">
             ⏱ 試合記録をつける
           </LinkButton>
@@ -122,7 +122,7 @@ export default async function MatchDetailPage({
         <LinkButton
           href={`/matches/${m.id}/scoresheet`}
           className={
-            can.recordStats(membership.role)
+            can.recordStats(membership) || can.recordAnalysis(membership)
               ? "bg-indigo-600 hover:bg-indigo-700"
               : "col-span-2 bg-indigo-600 hover:bg-indigo-700"
           }

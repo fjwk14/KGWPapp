@@ -13,8 +13,8 @@ export async function updateClip(formData: FormData) {
   const clipId = String(formData.get("clip_id"));
   const back = `/clips/${clipId}/edit`;
 
-  if (!can.createClip(membership.role)) {
-    redirect(`${back}?error=${encodeURIComponent("編集の権限がありません(戦術班以上)")}`);
+  if (!can.createClip(membership)) {
+    redirect(`${back}?error=${encodeURIComponent("編集の権限がありません(戦術チーム以上)")}`);
   }
 
   const parsed = clipFormSchema.safeParse({

@@ -28,7 +28,7 @@ export default async function NewClipPage({
   const { id } = await params;
   const { error } = await searchParams;
   const { membership, team } = await requireMembership();
-  if (!can.createClip(membership.role)) redirect(`/matches/${id}`);
+  if (!can.createClip(membership)) redirect(`/matches/${id}`);
 
   const supabase = await createClient();
   const { data: match } = await supabase

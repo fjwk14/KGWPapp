@@ -122,6 +122,9 @@ try {
 
   await step("そのまま開始でき、GKが緑で表示される", async () => {
     await page.click('button:has-text("この2人で開始")');
+    // 管理者は両モードの権限を持つため、記録モード選択 → マネージャー記録
+    await page.waitForSelector('[data-testid="mode-manager"]');
+    await page.click('[data-testid="mode-manager"]');
     await page.waitForSelector('[data-testid="score"]');
     // GK(定選手)がGK枠(緑)に表示される
     await page.waitForSelector("text=GK 定選手 太郎");

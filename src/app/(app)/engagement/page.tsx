@@ -18,7 +18,7 @@ function formatDuration(sec: number): string {
 // スタッフ(クリップ管理権限を持つロール)のみ閲覧できる。
 export default async function EngagementPage() {
   const { team, membership } = await requireMembership();
-  if (!can.createClip(membership.role)) redirect("/dashboard");
+  if (!can.createClip(membership)) redirect("/dashboard");
   const supabase = await createClient();
 
   const [{ data: viewsData }, { data: membersData }] = await Promise.all([

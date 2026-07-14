@@ -1,7 +1,33 @@
 // フィジカル測定のカタログと純関数。
 // 測定項目は今後増減しうるため EAV(physical_measurements: 1行=1項目)で
-// 保存し、カタログ(単位・向き・レーダー軸)はこのファイル側で定義する。
+// 保存し、カタログ(単位・向き・所属軸)はこのファイル側で定義する。
+//
+// レーダーは6軸(筋力・体幹・持久力・スプリント力・投力・精度)。
+// 各測定項目はいずれかの軸に属し、軸の値=その軸に属する測定済み項目の
+// チーム内偏差値(T得点)の平均。複数項目で1軸を構成するため、
+// 1種目の得意不得意に引っ張られにくい。
 import { positionLabel } from "./constants";
+
+// ---------- レーダー6軸 ----------
+
+export type AxisKey =
+  | "strength"
+  | "core"
+  | "endurance"
+  | "sprint"
+  | "throw"
+  | "accuracy";
+
+export const RADAR_AXES: { key: AxisKey; label: string }[] = [
+  { key: "strength", label: "筋力" },
+  { key: "core", label: "体幹" },
+  { key: "endurance", label: "持久力" },
+  { key: "sprint", label: "スプリント力" },
+  { key: "throw", label: "投力" },
+  { key: "accuracy", label: "精度" },
+];
+
+// ---------- 測定項目カタログ(水球の重要メニューを6軸に対応付け) ----------
 
 export interface MetricDef {
   key: string;
@@ -9,33 +35,34 @@ export interface MetricDef {
   unit: string;
   /** true = 値が大きいほど良い(例: 垂直到達) */
   higherIsBetter: boolean;
-  /** レーダーチャートの軸として使う場合のラベル(使わない項目はnull) */
-  radarLabel: string | null;
+  /** 所属するレーダー軸 */
+  axis: AxisKey;
 }
 
-// 7軸(レーダーチャート用)の並び。個人ページのレーダーはこの順で描画する。
 export const PHYSICAL_METRICS: MetricDef[] = [
-  { key: "vertical", label: "垂直到達", unit: "cm", higherIsBetter: true, radarLabel: "到達高" },
-  { key: "eggbeater_hold", label: "巻き足キープ", unit: "秒", higherIsBetter: true, radarLabel: "キープ" },
-  { key: "side5m", label: "巻き足横移動5m", unit: "秒", higherIsBetter: false, radarLabel: null },
-  { key: "sprint10", label: "10mスプリント", unit: "秒", higherIsBetter: false, radarLabel: "10m" },
-  { key: "sprint25", label: "25mスプリント", unit: "秒", higherIsBetter: false, radarLabel: null },
-  { key: "endurance200", label: "200m持久", unit: "秒", higherIsBetter: false, radarLabel: "持久" },
-  { key: "throw_max", label: "最大スロー速度", unit: "km/h", higherIsBetter: true, radarLabel: "スロー" },
-  { key: "throw_pass", label: "パス後スロー速度", unit: "km/h", higherIsBetter: true, radarLabel: null },
-  { key: "shoot_accuracy", label: "シュート精度", unit: "/10", higherIsBetter: true, radarLabel: "精度" },
-  { key: "pullups", label: "引く力(懸垂)", unit: "回", higherIsBetter: true, radarLabel: "引く力" },
-  { key: "adductor", label: "内転筋(コペンハーゲン)", unit: "秒", higherIsBetter: true, radarLabel: null },
-  { key: "plank", label: "体幹保持(加重プランク)", unit: "秒", higherIsBetter: true, radarLabel: null },
+  // 筋力: 水中で相手に競り勝つ・浮き上がる力
+  { key: "pullups", label: "引く力(懸垂)", unit: "回", higherIsBetter: true, axis: "strength" },
+  { key: "vertical", label: "垂直到達(ジャンプ)", unit: "cm", higherIsBetter: true, axis: "strength" },
+  // 体幹: シュート・ディフェンス時の姿勢維持
+  { key: "plank", label: "体幹保持(加重プランク)", unit: "秒", higherIsBetter: true, axis: "core" },
+  { key: "adductor", label: "内転筋(コペンハーゲン)", unit: "秒", higherIsBetter: true, axis: "core" },
+  // 持久力: 4Q泳ぎ切る力・巻き足の持続
+  { key: "endurance200", label: "200m持久", unit: "秒", higherIsBetter: false, axis: "endurance" },
+  { key: "eggbeater_hold", label: "巻き足キープ", unit: "秒", higherIsBetter: true, axis: "endurance" },
+  // スプリント力: カウンターの初速・戻りの速さ・横の機動力
+  { key: "sprint10", label: "10mスプリント", unit: "秒", higherIsBetter: false, axis: "sprint" },
+  { key: "sprint25", label: "25mスプリント", unit: "秒", higherIsBetter: false, axis: "sprint" },
+  { key: "side5m", label: "巻き足横移動5m", unit: "秒", higherIsBetter: false, axis: "sprint" },
+  // 投力: シュート・ロングパスの球速
+  { key: "throw_max", label: "最大スロー速度", unit: "km/h", higherIsBetter: true, axis: "throw" },
+  { key: "throw_pass", label: "パス後スロー速度", unit: "km/h", higherIsBetter: true, axis: "throw" },
+  // 精度: 狙ったところに投げる力
+  { key: "shoot_accuracy", label: "シュート精度", unit: "/10", higherIsBetter: true, axis: "accuracy" },
+  { key: "pass_accuracy", label: "パス精度", unit: "/10", higherIsBetter: true, axis: "accuracy" },
 ];
 
 export const PHYSICAL_METRIC_MAP: Record<string, MetricDef> = Object.fromEntries(
   PHYSICAL_METRICS.map((m) => [m.key, m])
-);
-
-// レーダー7軸(radarLabelが設定されている項目のみ、カタログ記載順)
-export const RADAR_METRICS: MetricDef[] = PHYSICAL_METRICS.filter(
-  (m) => m.radarLabel != null
 );
 
 export interface PhysicalMeasurementRow {
@@ -89,16 +116,30 @@ function latestValuesByUser(
   return latest;
 }
 
-export interface RadarAxisScore {
+// 項目単位のスコア(個人ページの明細テーブル用)
+export interface MetricScore {
   key: string;
   label: string;
+  unit: string;
+  axis: AxisKey;
   /** 本人の生値(未測定はnull) */
   value: number | null;
-  /** チーム全体基準のT得点(未測定は50) */
-  teamT: number;
+  /** チーム全体基準のT得点(未測定はnull) */
+  teamT: number | null;
   /** 同ポジション平均(生値)をチーム全体基準でT化した値。
-   *  同ポジションの測定済み人数が2人未満ならnull(本人1人だけでは「平均」にならない)。 */
+   *  同ポジションの測定済み人数が2人未満ならnull。 */
   positionT: number | null;
+}
+
+// 軸単位のスコア(レーダー用)。軸T=軸内の測定済み項目Tの平均
+export interface RadarAxisScore {
+  key: AxisKey;
+  label: string;
+  /** 未測定の軸は50(チーム平均扱い) */
+  teamT: number;
+  positionT: number | null;
+  /** この軸で測定済みの項目数(0=未測定) */
+  measuredCount: number;
 }
 
 export interface PhysicalProfile {
@@ -107,7 +148,8 @@ export interface PhysicalProfile {
   cap_number: number;
   position: string; // "gk" | "1".."6" | ""
   axes: RadarAxisScore[];
-  /** 7軸のチームT得点平均(0〜100に丸め) */
+  metrics: MetricScore[];
+  /** 6軸Tの平均(0〜100に丸め) */
   overallPhysicalScore: number;
 }
 
@@ -120,16 +162,20 @@ export function buildPhysicalProfiles(
   roster: PhysicalRosterEntry[]
 ): PhysicalProfile[] {
   const positionByUser = new Map(roster.map((r) => [r.user_id, positionOf(r)]));
+  // 項目ごとの最新値マップは全員分共通なので先に作る
+  const latestByMetric = new Map(
+    PHYSICAL_METRICS.map((m) => [m.key, latestValuesByUser(rows, m.key)])
+  );
 
   return roster.map((r) => {
-    const axes: RadarAxisScore[] = RADAR_METRICS.map((metric) => {
-      const latest = latestValuesByUser(rows, metric.key);
+    const metrics: MetricScore[] = PHYSICAL_METRICS.map((metric) => {
+      const latest = latestByMetric.get(metric.key)!;
       const value = latest.get(r.user_id)?.value ?? null;
 
       const teamValues = [...latest.values()].map((v) => v.value);
       const teamT =
         value == null
-          ? 50
+          ? null
           : deviationScore(teamValues, value, metric.higherIsBetter);
 
       const samePosition = roster.filter(
@@ -149,10 +195,35 @@ export function buildPhysicalProfiles(
 
       return {
         key: metric.key,
-        label: metric.radarLabel ?? metric.label,
+        label: metric.label,
+        unit: metric.unit,
+        axis: metric.axis,
         value,
         teamT,
         positionT,
+      };
+    });
+
+    // 軸T = 軸内の測定済み項目Tの平均(未測定の軸は50)
+    const axes: RadarAxisScore[] = RADAR_AXES.map((axis) => {
+      const inAxis = metrics.filter((m) => m.axis === axis.key);
+      const measured = inAxis.filter((m) => m.teamT != null);
+      const teamT =
+        measured.length > 0
+          ? measured.reduce((s, m) => s + (m.teamT as number), 0) / measured.length
+          : 50;
+      const positionMeasured = inAxis.filter((m) => m.positionT != null);
+      const positionT =
+        positionMeasured.length > 0
+          ? positionMeasured.reduce((s, m) => s + (m.positionT as number), 0) /
+            positionMeasured.length
+          : null;
+      return {
+        key: axis.key,
+        label: axis.label,
+        teamT,
+        positionT,
+        measuredCount: measured.length,
       };
     });
 
@@ -166,6 +237,7 @@ export function buildPhysicalProfiles(
       cap_number: r.cap_number,
       position: positionOf(r),
       axes,
+      metrics,
       overallPhysicalScore: Math.min(100, Math.max(0, overallPhysicalScore)),
     };
   });
@@ -232,7 +304,7 @@ export function buildOverallRanking(
 // ---------- コメント生成(ルールベース。LLMは使わない) ----------
 
 export function generatePhysicalComment(profile: PhysicalProfile): string {
-  const measured = profile.axes.filter((a) => a.value != null);
+  const measured = profile.axes.filter((a) => a.measuredCount > 0);
   if (measured.length === 0) {
     return "まだ測定記録がありません。フィジカル測定を記録すると強み・伸びしろが表示されます。";
   }
@@ -262,7 +334,7 @@ export function generatePhysicalComment(profile: PhysicalProfile): string {
     );
   }
   if (sentences.length === 0) {
-    return "全項目がチーム平均前後。突出した強み・弱みは見られない。";
+    return "全軸がチーム平均前後。突出した強み・弱みは見られない。";
   }
   return sentences.join("");
 }

@@ -20,8 +20,8 @@ export async function generateReport(formData: FormData) {
   const { membership, userId } = await requireMembership();
   const matchId = String(formData.get("match_id"));
 
-  if (!can.generateReport(membership.role)) {
-    backTo(matchId, "レポート生成の権限がありません(戦術班以上)");
+  if (!can.generateReport(membership)) {
+    backTo(matchId, "レポート生成の権限がありません(戦術チーム以上)");
   }
 
   const supabase = await createClient();
@@ -91,7 +91,7 @@ export async function updateReport(formData: FormData) {
   const matchId = String(formData.get("match_id"));
   const reportId = String(formData.get("report_id"));
 
-  if (!can.editReport(membership.role)) {
+  if (!can.editReport(membership)) {
     backTo(matchId, "レポート編集の権限がありません(幹部・主将のみ)");
   }
 

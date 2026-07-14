@@ -25,7 +25,7 @@ function cleanText(v: FormDataEntryValue | null, max = 4000): string | null {
 // マネージャーは詳細画面で欠席者だけを切り替えれば済む。
 export async function createPractice(formData: FormData) {
   const { team, userId, membership } = await requireMembership();
-  if (!can.recordPractice(membership.role)) {
+  if (!can.recordPractice(membership)) {
     backTo("/practices", "練習の記録には権限が必要です(マネージャー以上)");
   }
 
@@ -75,7 +75,7 @@ export async function createPractice(formData: FormData) {
 
 export async function updatePractice(formData: FormData) {
   const { membership } = await requireMembership();
-  if (!can.recordPractice(membership.role)) {
+  if (!can.recordPractice(membership)) {
     backTo("/practices", "練習の編集には権限が必要です(マネージャー以上)");
   }
 
@@ -115,7 +115,7 @@ export async function updatePractice(formData: FormData) {
 // 出欠を一括保存(status_<userId> を各メンバー分まとめて upsert する)
 export async function saveAttendance(formData: FormData) {
   const { team, membership } = await requireMembership();
-  if (!can.recordPractice(membership.role)) {
+  if (!can.recordPractice(membership)) {
     backTo("/practices", "出欠の記録には権限が必要です(マネージャー以上)");
   }
 
@@ -157,7 +157,7 @@ export async function saveAttendance(formData: FormData) {
 
 export async function deletePractice(formData: FormData) {
   const { membership } = await requireMembership();
-  if (!can.recordPractice(membership.role)) {
+  if (!can.recordPractice(membership)) {
     backTo("/practices", "練習の削除には権限が必要です(マネージャー以上)");
   }
   const practiceId = z.string().uuid().safeParse(formData.get("practice_id"));

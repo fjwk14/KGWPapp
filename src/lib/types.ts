@@ -1,7 +1,8 @@
 export type Role =
   | "player"
   | "manager"
-  | "tactical_staff"
+  | "tactical_staff" // 表示名: 戦術チーム
+  | "analysis_team" // 表示名: 分析チーム
   | "executive"
   | "captain"
   | "admin";

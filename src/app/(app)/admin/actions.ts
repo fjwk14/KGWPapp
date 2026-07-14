@@ -8,7 +8,7 @@ import { can } from "@/lib/permissions";
 import { tagTemplateSchema } from "@/lib/validation";
 import { z } from "zod";
 
-const ROLES = ["player", "manager", "tactical_staff", "executive", "captain", "admin"] as const;
+const ROLES = ["player", "manager", "tactical_staff", "analysis_team", "executive", "captain", "admin"] as const;
 const STATUSES = ["active", "inactive", "graduated", "removed"] as const;
 
 function backTo(path: string, error?: string): never {
@@ -17,7 +17,7 @@ function backTo(path: string, error?: string): never {
 
 async function requireAdmin() {
   const ctx = await requireMembership();
-  if (!can.manageTeam(ctx.membership.role)) {
+  if (!can.manageTeam(ctx.membership)) {
     backTo("/dashboard", "管理者権限が必要です");
   }
   return ctx;
@@ -83,14 +83,15 @@ export async function bulkUpdateMembers(formData: FormData) {
     const status = z.enum(STATUSES).safeParse(formData.get(`status_${membershipId}`));
     if (!role.success || !status.success) backTo("/admin", "不正な入力です");
 
-    // 役職の併用は管理者(primary=admin)のみ。それ以外はnullに矯正する
+    // 役職の併用は全ロール可(0016)。primaryと同じ役職・adminの併用のみ弾く
     const rawSecondary = String(formData.get(`secondary_role_${membershipId}`) ?? "");
     const secondaryParsed = z.enum(ROLES).safeParse(rawSecondary);
-    let secondaryRole: string | null =
-      secondaryParsed.success && secondaryParsed.data !== role.data
+    const secondaryRole: string | null =
+      secondaryParsed.success &&
+      secondaryParsed.data !== role.data &&
+      secondaryParsed.data !== "admin"
         ? secondaryParsed.data
         : null;
-    if (role.data !== "admin") secondaryRole = null;
 
     // 既定の帽子番号(1〜99 / 空欄はnull)とポジション
     const rawCap = String(formData.get(`cap_number_${membershipId}`) ?? "").trim();

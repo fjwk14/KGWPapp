@@ -26,7 +26,7 @@ export default async function EditClipPage({
   const { id } = await params;
   const { error } = await searchParams;
   const { membership } = await requireMembership();
-  if (!can.createClip(membership.role)) redirect(`/clips/${id}`);
+  if (!can.createClip(membership)) redirect(`/clips/${id}`);
 
   const supabase = await createClient();
   const { data: clip } = await supabase

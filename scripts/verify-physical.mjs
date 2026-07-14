@@ -121,7 +121,7 @@ try {
   await step("/physical/[userId]でレーダー・コメントが表示される", async () => {
     await page.goto(`${BASE}/physical/${memberUserId}`);
     await page.waitForSelector("svg"); // レーダーチャート
-    await page.waitForSelector("text=フィジカル7軸(本人 vs 同ポジ平均)");
+    await page.waitForSelector("text=フィジカル6軸(本人 vs 同ポジ平均)");
     await page.waitForSelector("text=総合フィジカルスコア");
     // コメントカードが空でない
     const bodyText = await page.textContent("body");

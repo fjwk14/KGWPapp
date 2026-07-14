@@ -14,7 +14,10 @@ export default async function LiveStatsPage({
 }) {
   const { id } = await params;
   const { team, membership } = await requireMembership();
-  if (!can.recordStats(membership.role)) redirect(`/matches/${id}`);
+  // マネージャー(記録シート)/ 分析チーム(分析記録)のどちらかの権限があれば入れる
+  const canManagerMode = can.recordStats(membership);
+  const canAnalysisMode = can.recordAnalysis(membership);
+  if (!canManagerMode && !canAnalysisMode) redirect(`/matches/${id}`);
 
   const supabase = await createClient();
   const { data: matchData } = await supabase
@@ -103,6 +106,8 @@ export default async function LiveStatsPage({
         initialRoster={roster}
         rosterSaved={rosterSaved}
         initialEvents={(eventsData ?? []) as StatsEvent[]}
+        canManagerMode={canManagerMode}
+        canAnalysisMode={canAnalysisMode}
       />
     </>
   );

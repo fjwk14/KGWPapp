@@ -459,15 +459,29 @@ describe.skipIf(!DATABASE_URL)("RLS統合テスト(実PostgreSQL)", () => {
       });
     });
 
-    it("管理者以外への併用役職はCHECK制約で拒否される", async () => {
-      // 直接更新(スーパーユーザー)でも制約に反する組み合わせは弾かれる
+    it("管理者以外にも併用役職を設定できる(0016で開放)", async () => {
+      const res = await db.query(
+        `update memberships set secondary_role = 'analysis_team'
+         where team_id = $1 and user_id = $2 returning secondary_role`,
+        [TEAM_A, PLAYER]
+      );
+      expect(res.rows[0]?.secondary_role).toBe("analysis_team");
+      // 後続テストに影響しないよう戻す
+      await db.query(
+        `update memberships set secondary_role = null
+         where team_id = $1 and user_id = $2`,
+        [TEAM_A, PLAYER]
+      );
+    });
+
+    it("primaryと同じ役職の併用はCHECK制約で拒否される", async () => {
       await expect(
         db.query(
-          `update memberships set secondary_role = 'manager'
+          `update memberships set secondary_role = 'player'
            where team_id = $1 and user_id = $2`,
           [TEAM_A, PLAYER]
         )
-      ).rejects.toThrow(/memberships_secondary_role_admin_only/);
+      ).rejects.toThrow(/memberships_secondary_role_distinct/);
     });
 
     it("試合削除: マネージャーは削除でき、選手はできない", async () => {

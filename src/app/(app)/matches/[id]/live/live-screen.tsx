@@ -40,7 +40,14 @@ interface Props {
   // (管理画面の既定で埋めた)出場メンバー確認画面から始める。
   rosterSaved: boolean;
   initialEvents: StatsEvent[];
+  // マネージャーモード(記録シート項目)を使えるか
+  canManagerMode: boolean;
+  // 分析モード(レーダー軸に反映する項目)を使えるか
+  canAnalysisMode: boolean;
 }
+
+// 記録モード: manager=紙の記録シート項目 / analysis=分析チームの記録項目
+type RecordMode = "manager" | "analysis";
 
 type PendingOp =
   | { kind: "insert"; event: StatsEvent }
@@ -56,15 +63,13 @@ function loadOps(matchId: string): PendingOp[] {
   }
 }
 
-const FIELD_ACTIONS: {
+// マネージャーモード: 紙の記録シートにある項目のみ
+const SHEET_ACTIONS: {
   label: string;
   type: StatsEvent["type"];
   subtype?: string;
 }[] = [
   { label: "アシスト", type: "assist" },
-  { label: "縦パス", type: "key_pass" },
-  { label: "速攻参加", type: "counter_join" },
-  { label: "対人守備", type: "defense_stop" },
   { label: "カット", type: "cut" },
   { label: "E誘発", type: "drawn_exclusion", subtype: "exclusion" },
   { label: "P誘発", type: "drawn_exclusion", subtype: "penalty" },
@@ -75,6 +80,17 @@ const FIELD_ACTIONS: {
   { label: "他ミス", type: "miss", subtype: "other" },
 ];
 
+// 分析モード: 選手のプレー総合スコア(レーダー軸)に反映される項目
+const ANALYSIS_ACTIONS: {
+  label: string;
+  description: string;
+  type: StatsEvent["type"];
+}[] = [
+  { label: "縦パス", description: "攻撃の起点になるパス(展開力)", type: "key_pass" },
+  { label: "速攻参加", description: "カウンターに泳ぎ参加(展開力)", type: "counter_join" },
+  { label: "対人守備", description: "1対1で相手を止めた(対人守備)", type: "defense_stop" },
+];
+
 export default function LiveScreen({
   matchId,
   teamId,
@@ -83,6 +99,8 @@ export default function LiveScreen({
   initialRoster,
   rosterSaved,
   initialEvents,
+  canManagerMode,
+  canAnalysisMode,
 }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
@@ -90,6 +108,10 @@ export default function LiveScreen({
   const [roster, setRoster] = useState<RosterEntry[]>(initialRoster);
   // 未保存(=既定で仮組み or 空)なら出場メンバー確認から始める
   const [editingRoster, setEditingRoster] = useState(!rosterSaved);
+  // 記録モード: 両方使えるなら開始時に選択(null)。片方だけなら自動決定
+  const [mode, setMode] = useState<RecordMode | null>(
+    canManagerMode && canAnalysisMode ? null : canManagerMode ? "manager" : "analysis"
+  );
 
   const [events, setEvents] = useState<StatsEvent[]>(initialEvents);
   const [ops, setOps] = useState<PendingOp[]>([]);
@@ -403,6 +425,40 @@ export default function LiveScreen({
     );
   }
 
+  // ---------- 記録モード選択(両方の権限を持つ場合のみ) ----------
+
+  if (mode === null) {
+    return (
+      <div className="space-y-3">
+        <h2 className="font-bold">記録モードを選択</h2>
+        <p className="text-xs text-slate-500">
+          どちらの担当として記録を始めるか選んでください(あとから切り替えられます)。
+        </p>
+        <button
+          onClick={() => setMode("manager")}
+          data-testid="mode-manager"
+          className="w-full rounded-xl border-2 border-brand-600 bg-brand-50 p-4 text-left"
+        >
+          <span className="block font-bold text-brand-700">📋 マネージャー記録</span>
+          <span className="mt-1 block text-xs text-slate-500">
+            紙の記録シートと同じ項目(シュート・アシスト・退水・GKなど)を記録します
+          </span>
+        </button>
+        <button
+          onClick={() => setMode("analysis")}
+          data-testid="mode-analysis"
+          className="w-full rounded-xl border-2 border-emerald-600 bg-emerald-50 p-4 text-left"
+        >
+          <span className="block font-bold text-emerald-700">🔍 分析チーム記録</span>
+          <span className="mt-1 block text-xs text-slate-500">
+            選手のプレー総合スコア(レーダー)に反映される項目
+            (縦パス・速攻参加・対人守備)を記録します
+          </span>
+        </button>
+      </div>
+    );
+  }
+
   // ---------- メイン画面 ----------
 
   return (
@@ -445,18 +501,33 @@ export default function LiveScreen({
           <p className="text-2xl font-bold" data-testid="score">
             {score.for} <span className="text-slate-400">-</span> {score.against}
           </p>
-          <button
-            onClick={() => setExtraMan((v) => !v)}
-            data-testid="extra-toggle"
-            className={clsx(
-              "min-h-11 rounded-lg px-4 text-sm font-bold",
-              extraMan
-                ? "bg-amber-500 text-white"
-                : "border border-slate-300 text-slate-400"
+          <div className="flex items-center gap-2">
+            <span
+              data-testid="mode-badge"
+              className={clsx(
+                "rounded-full px-2 py-0.5 text-[10px] font-bold",
+                mode === "manager"
+                  ? "bg-brand-100 text-brand-700"
+                  : "bg-emerald-100 text-emerald-700"
+              )}
+            >
+              {mode === "manager" ? "📋 マネージャー" : "🔍 分析"}
+            </span>
+            {mode === "manager" && (
+              <button
+                onClick={() => setExtraMan((v) => !v)}
+                data-testid="extra-toggle"
+                className={clsx(
+                  "min-h-11 rounded-lg px-4 text-sm font-bold",
+                  extraMan
+                    ? "bg-amber-500 text-white"
+                    : "border border-slate-300 text-slate-400"
+                )}
+              >
+                E {extraMan ? "ON" : "OFF"}
+              </button>
             )}
-          >
-            E {extraMan ? "ON" : "OFF"}
-          </button>
+          </div>
         </div>
       </div>
 
@@ -511,23 +582,40 @@ export default function LiveScreen({
       </div>
 
       {/* チームイベント: 攻撃の時間使い切り(シュートに至らず攻撃終了)。
-          相手の得点はGKの「失点」で記録するため、ここには置かない。 */}
-      <div>
-        <button
-          onClick={() => record({ type: "attack_end_no_shot" })}
-          className="min-h-11 w-full rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-700"
-        >
-          ⏱ 時間使い切り(攻撃終了)
-        </button>
-      </div>
+          相手の得点はGKの「失点」で記録するため、ここには置かない。
+          マネージャーモード専用(分析モードは選手アクションのみ)。 */}
+      {mode === "manager" && (
+        <div>
+          <button
+            onClick={() => record({ type: "attack_end_no_shot" })}
+            className="min-h-11 w-full rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-700"
+          >
+            ⏱ 時間使い切り(攻撃終了)
+          </button>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
-        <button
-          onClick={() => setEditingRoster(true)}
-          className="text-xs text-slate-400 underline"
-        >
-          出場メンバーを変更
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setEditingRoster(true)}
+            className="text-xs text-slate-400 underline"
+          >
+            出場メンバーを変更
+          </button>
+          {canManagerMode && canAnalysisMode && (
+            <button
+              onClick={() => {
+                setMode(mode === "manager" ? "analysis" : "manager");
+                setSelected(null);
+                setShotSubtype(null);
+              }}
+              className="text-xs text-slate-400 underline"
+            >
+              モード切替
+            </button>
+          )}
+        </div>
         <button
           onClick={() => setShowLog(true)}
           className="text-xs text-brand-600 underline"
@@ -537,14 +625,16 @@ export default function LiveScreen({
       </div>
 
       {/* 試合終了: スコア・勝敗を試合情報に反映(動画は後日でOK) */}
-      <button
-        onClick={finishMatch}
-        disabled={finishing}
-        data-testid="finish-match"
-        className="min-h-11 w-full rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-700 disabled:opacity-50"
-      >
-        {finishing ? "反映中..." : "🏁 試合終了(スコアを試合情報に反映)"}
-      </button>
+      {mode === "manager" && (
+        <button
+          onClick={finishMatch}
+          disabled={finishing}
+          data-testid="finish-match"
+          className="min-h-11 w-full rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-700 disabled:opacity-50"
+        >
+          {finishing ? "反映中..." : "🏁 試合終了(スコアを試合情報に反映)"}
+        </button>
+      )}
 
       {/* アクションパネル(選手選択時) */}
       {selected && (
@@ -567,7 +657,23 @@ export default function LiveScreen({
             </button>
           </div>
 
-          {selected.is_gk ? (
+          {mode === "analysis" ? (
+            // 分析モード: レーダー軸に反映される項目のみ(2タップ)
+            <div className="space-y-2">
+              {ANALYSIS_ACTIONS.map((a) => (
+                <button
+                  key={a.type}
+                  onClick={() =>
+                    record({ type: a.type, player_id: selected.user_id })
+                  }
+                  className="flex w-full items-center justify-between rounded-lg bg-emerald-50 px-4 py-3 text-left"
+                >
+                  <span className="font-bold text-emerald-800">{a.label}</span>
+                  <span className="text-[10px] text-emerald-600">{a.description}</span>
+                </button>
+              ))}
+            </div>
+          ) : selected.is_gk ? (
             // GK: 2タップ(選手→結果)
             <div className="grid grid-cols-3 gap-2">
               {(Object.keys(GK_RESULT_LABELS) as GkResult[]).map((res) => (
@@ -652,7 +758,7 @@ export default function LiveScreen({
               <div>
                 <p className="mb-1.5 text-xs font-semibold text-slate-500">アクション</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {FIELD_ACTIONS.map((a) => (
+                  {SHEET_ACTIONS.map((a) => (
                     <button
                       key={a.label}
                       onClick={() =>

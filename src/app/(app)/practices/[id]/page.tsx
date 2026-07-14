@@ -76,7 +76,7 @@ export default async function PracticeDetailPage({
     )
   );
 
-  const canRecord = can.recordPractice(membership.role);
+  const canRecord = can.recordPractice(membership);
 
   // 出欠サマリ
   const counts: Record<string, number> = {

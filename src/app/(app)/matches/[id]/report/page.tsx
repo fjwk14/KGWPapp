@@ -64,7 +64,7 @@ export default async function ReportPage({
     .order("created_at", { ascending: false });
   const reports = (reportsData ?? []) as TacticalReport[];
   const latest = reports[0] ?? null;
-  const isEditing = edit === "1" && latest && can.editReport(membership.role);
+  const isEditing = edit === "1" && latest && can.editReport(membership);
 
   return (
     <>
@@ -73,7 +73,7 @@ export default async function ReportPage({
       </Link>
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">AI戦術レポート</h1>
-        {can.generateReport(membership.role) && (
+        {can.generateReport(membership) && (
           <form action={generateReport}>
             <input type="hidden" name="match_id" value={id} />
             <Button type="submit" className="min-h-9 px-3 text-xs">
@@ -113,7 +113,7 @@ export default async function ReportPage({
           />
           <ListSection title="ミーティング共有事項" items={latest.meeting_points} />
 
-          {can.editReport(membership.role) && (
+          {can.editReport(membership) && (
             <Link
               href={`/matches/${id}/report?edit=1`}
               className="inline-block text-sm text-brand-600 underline"
