@@ -218,8 +218,18 @@ try {
   await step("ダッシュボードに集計が反映される", async () => {
     await page.goto(`${BASE}/dashboard`);
     const body = await page.textContent("body");
-    for (const expected of ["E2E練習試合", "戻り遅れ", "戻り速度の徹底"]) {
+    // 「AIが提案する次回練習テーマ」は廃止し、データ要約+議論のタネの表示に変更した
+    for (const expected of [
+      "E2E練習試合",
+      "戻り遅れ",
+      "チームのスタッツ要約",
+      "選手ハイライト",
+      "課題の参考データ",
+    ]) {
       if (!body.includes(expected)) throw new Error(`ダッシュボードに「${expected}」が無い`);
+    }
+    if (body.includes("AIが提案する次回練習テーマ")) {
+      throw new Error("旧セクション「AIが提案する次回練習テーマ」が残っている");
     }
     await shot("07-dashboard");
   });
@@ -278,16 +288,16 @@ try {
     await shot("09-admin");
   });
 
-  await step("管理者は役職を併用できる(管理者 兼 主将)", async () => {
+  await step("管理者は役職を併用できる(管理者 兼 主将・一括更新)", async () => {
     await page.goto(`${BASE}/admin`);
-    // 先頭カード = 最初に参加した管理者本人
-    const adminForm = page
-      .locator('form:has(select[name="secondary_role"])')
-      .first();
-    await adminForm
-      .locator('select[name="secondary_role"]')
+    // 管理者本人の行(氏名で特定)の併用役職を「主将」にして一括更新
+    const adminRow = page
+      .locator('div:has(select[name^="secondary_role_"]):has-text("E2Eスタッフ")')
+      .last();
+    await adminRow
+      .locator('select[name^="secondary_role_"]')
       .selectOption("captain");
-    await adminForm.locator('button:has-text("更新")').click();
+    await page.click('button:has-text("一括更新")');
     // 更新後の再描画でヘッダーのロール表示が 管理者/主将 になるのを待つ
     await page.waitForSelector("header:has-text('主将')");
   });

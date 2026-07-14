@@ -14,7 +14,6 @@ import {
   type PhysicalRosterEntry,
 } from "@/lib/physical";
 import {
-  PERFORMANCE_AXIS_LABELS,
   buildGkPerformance,
   buildPerformanceProfiles,
 } from "@/lib/performance";
@@ -240,10 +239,16 @@ export default async function PhysicalDetailPage({
             <p className="text-lg font-bold tabular-nums">
               総合プレースコア {performanceProfile.overallPerformance}
             </p>
-            <p className="text-[10px] text-slate-400">
-              ※{PERFORMANCE_AXIS_LABELS.buildup}・{PERFORMANCE_AXIS_LABELS.defense}
-              は専用の記録項目がまだ無いため、既存の記録(アシスト・シュート関与・カット・被退水)からの簡易推定です。
-            </p>
+            {performanceProfile.axes.some((a) => a.approx) && (
+              <p className="text-[10px] text-slate-400">
+                ※
+                {performanceProfile.axes
+                  .filter((a) => a.approx)
+                  .map((a) => a.label)
+                  .join("・")}
+                は専用の記録項目がまだ無いため、既存の記録(アシスト・シュート関与・カット・被退水)からの簡易推定です。
+              </p>
+            )}
           </>
         )}
         {gkCard && (

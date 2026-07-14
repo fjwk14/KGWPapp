@@ -58,79 +58,113 @@ export async function regenerateInviteCode() {
   backTo("/admin");
 }
 
-export async function updateMember(formData: FormData) {
+interface ParsedMemberUpdate {
+  membershipId: string;
+  role: (typeof ROLES)[number];
+  status: (typeof STATUSES)[number];
+  secondaryRole: string | null;
+  capNumber: number | null;
+  isGk: boolean;
+  fieldPosition: number | null;
+}
+
+export async function bulkUpdateMembers(formData: FormData) {
   const { team } = await requireAdmin();
-  const membershipId = String(formData.get("membership_id"));
-  const role = z.enum(ROLES).safeParse(formData.get("role"));
-  const status = z.enum(STATUSES).safeParse(formData.get("status"));
-  if (!role.success || !status.success) backTo("/admin", "不正な入力です");
 
-  // 役職の併用は管理者(primary=admin)のみ。それ以外はnullに矯正する
-  const rawSecondary = String(formData.get("secondary_role") ?? "");
-  const secondaryParsed = z.enum(ROLES).safeParse(rawSecondary);
-  let secondaryRole: string | null =
-    secondaryParsed.success && secondaryParsed.data !== role.data
-      ? secondaryParsed.data
-      : null;
-  if (role.data !== "admin") secondaryRole = null;
+  const memberIds = String(formData.get("member_ids") ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  if (memberIds.length === 0) backTo("/admin", "更新対象がありません");
 
-  // 既定の帽子番号(1〜99 / 空欄はnull)とポジション
-  const rawCap = String(formData.get("cap_number") ?? "").trim();
-  let capNumber: number | null = null;
-  if (rawCap !== "") {
-    const n = Number(rawCap);
-    if (!Number.isInteger(n) || n < 1 || n > 99) {
-      backTo("/admin", "帽子番号は1〜99で入力してください");
+  const updates: ParsedMemberUpdate[] = [];
+  for (const membershipId of memberIds) {
+    const role = z.enum(ROLES).safeParse(formData.get(`role_${membershipId}`));
+    const status = z.enum(STATUSES).safeParse(formData.get(`status_${membershipId}`));
+    if (!role.success || !status.success) backTo("/admin", "不正な入力です");
+
+    // 役職の併用は管理者(primary=admin)のみ。それ以外はnullに矯正する
+    const rawSecondary = String(formData.get(`secondary_role_${membershipId}`) ?? "");
+    const secondaryParsed = z.enum(ROLES).safeParse(rawSecondary);
+    let secondaryRole: string | null =
+      secondaryParsed.success && secondaryParsed.data !== role.data
+        ? secondaryParsed.data
+        : null;
+    if (role.data !== "admin") secondaryRole = null;
+
+    // 既定の帽子番号(1〜99 / 空欄はnull)とポジション
+    const rawCap = String(formData.get(`cap_number_${membershipId}`) ?? "").trim();
+    let capNumber: number | null = null;
+    if (rawCap !== "") {
+      const n = Number(rawCap);
+      if (!Number.isInteger(n) || n < 1 || n > 99) {
+        backTo("/admin", "帽子番号は1〜99で入力してください");
+      }
+      capNumber = n;
     }
-    capNumber = n;
-  }
-  // ポジション: "gk" | "1".."6" | ""(未設定)
-  const rawPos = String(formData.get("position") ?? "").trim();
-  const isGk = rawPos === "gk";
-  let fieldPosition: number | null = null;
-  if (!isGk && rawPos !== "") {
-    const p = Number(rawPos);
-    if (Number.isInteger(p) && p >= 1 && p <= 6) fieldPosition = p;
+    // ポジション: "gk" | "1".."6" | ""(未設定)
+    const rawPos = String(formData.get(`position_${membershipId}`) ?? "").trim();
+    const isGk = rawPos === "gk";
+    let fieldPosition: number | null = null;
+    if (!isGk && rawPos !== "") {
+      const p = Number(rawPos);
+      if (Number.isInteger(p) && p >= 1 && p <= 6) fieldPosition = p;
+    }
+
+    updates.push({
+      membershipId,
+      role: role.data,
+      status: status.data,
+      secondaryRole,
+      capNumber,
+      isGk,
+      fieldPosition,
+    });
   }
 
   const supabase = await createClient();
 
-  // 最後のadminを降格・非アクティブ化するとチーム管理が不可能になるため防ぐ
-  const losesAdmin = role.data !== "admin" || status.data !== "active";
-  if (losesAdmin) {
-    const { data: admins } = await supabase
+  // 最後のadminを降格・非アクティブ化するとチーム管理が不可能になるため防ぐ。
+  // バッチ適用後の状態(既存の全メンバー + このフォームでの変更)で判定する。
+  const { data: allMembers } = await supabase
+    .from("memberships")
+    .select("id, role, status")
+    .eq("team_id", team.id);
+  const updatesById = new Map(updates.map((u) => [u.membershipId, u]));
+  const remainingActiveAdmins = (allMembers ?? []).filter((m) => {
+    const u = updatesById.get(m.id);
+    const role = u ? u.role : m.role;
+    const status = u ? u.status : m.status;
+    return role === "admin" && status === "active";
+  });
+  if (remainingActiveAdmins.length === 0) {
+    backTo("/admin", "最後の管理者は降格・除籍できません。先に別の管理者を任命してください。");
+  }
+
+  for (const u of updates) {
+    const { data, error } = await supabase
       .from("memberships")
-      .select("id")
-      .eq("team_id", team.id)
-      .eq("role", "admin")
-      .eq("status", "active");
-    const remaining = (admins ?? []).filter((m) => m.id !== membershipId);
-    const wasAdmin = (admins ?? []).some((m) => m.id === membershipId);
-    if (wasAdmin && remaining.length === 0) {
-      backTo("/admin", "最後の管理者は降格できません。先に別の管理者を任命してください。");
+      .update({
+        role: u.role,
+        status: u.status,
+        secondary_role: u.secondaryRole,
+        cap_number: u.capNumber,
+        is_gk: u.isGk,
+        field_position: u.fieldPosition,
+      })
+      .eq("id", u.membershipId)
+      .select("id");
+    if (error || !data?.length) {
+      const message =
+        error?.code === "23505"
+          ? "その帽子番号は他のメンバーが使用中です"
+          : "更新できませんでした(権限がない可能性があります)";
+      backTo("/admin", message);
     }
   }
 
-  const { data, error } = await supabase
-    .from("memberships")
-    .update({
-      role: role.data,
-      status: status.data,
-      secondary_role: secondaryRole,
-      cap_number: capNumber,
-      is_gk: isGk,
-      field_position: fieldPosition,
-    })
-    .eq("id", membershipId)
-    .select("id");
-  if (error || !data?.length) {
-    const message = error?.code === "23505"
-      ? "その帽子番号は他のメンバーが使用中です"
-      : "更新できませんでした(権限がない可能性があります)";
-    backTo("/admin", message);
-  }
   revalidatePath("/admin");
-  backTo("/admin");
+  backTo("/admin?ok=1");
 }
 
 export async function addTagTemplate(formData: FormData) {

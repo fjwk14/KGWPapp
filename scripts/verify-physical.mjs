@@ -135,7 +135,12 @@ try {
     await page.waitForSelector("text=プレー総合スコア");
     // 試合記録がまだ無いので基準点(T=50)のまま表示される
     await page.waitForSelector("text=総合プレースコア 50");
-    await page.waitForSelector("text=※簡易推定");
+    // 0014で展開力・対人守備も実データ化され全軸approx=falseになったため、
+    // 「※簡易推定」の注記はもう表示されない(表示されたらハードコードに戻った回帰)
+    const bodyText = await page.textContent("body");
+    if (bodyText?.includes("簡易推定")) {
+      throw new Error("全軸が実データ化されたのに「簡易推定」の注記が表示されている");
+    }
   });
 
   console.log(`\n=== フィジカル検証: ${ok}/${total} passed ===`);

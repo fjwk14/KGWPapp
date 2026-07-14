@@ -62,35 +62,33 @@ try {
     await page.waitForSelector("text=定選手");
   });
 
-  await step("管理画面で帽子番号・ポジションを設定(01→1正規化含む)", async () => {
+  await step("管理画面で帽子番号・ポジションを設定(01→1正規化含む・一括更新)", async () => {
     await page.goto(`${BASE}/admin`);
-    // 先頭=管理者本人 / 2番目=定選手(created_at順)
-    // サーバーアクションのPOST完了を待つ(同一URLへのredirectのため)
-    const submitAndWait = (form) =>
-      Promise.all([
-        page.waitForResponse(
-          (r) => r.request().method() === "POST" && r.status() < 400
-        ),
-        form.locator('button:has-text("更新")').click(),
-      ]);
+    // 全メンバーが1つのフォームにまとまっている。行は氏名で特定する
+    // (定管理者=先に参加した管理者本人 / 定選手=後から追加したメンバー)
+    const adminRow = page.locator('div:has(input[name^="cap_number_"]):has-text("定管理者")').last();
+    const memberRow = page.locator('div:has(input[name^="cap_number_"]):has-text("定選手")').last();
 
-    const adminForm = page.locator('form:has(input[name="cap_number"])').first();
-    await adminForm.locator('input[name="cap_number"]').fill("7");
-    await adminForm.locator('select[name="position"]').selectOption("6"); // センター
-    await submitAndWait(adminForm);
-
-    const memberForm = page.locator('form:has(input[name="cap_number"])').nth(1);
+    await adminRow.locator('input[name^="cap_number_"]').fill("7");
+    await adminRow.locator('select[name^="position_"]').selectOption("6"); // センター
     // 01と入力してもサーバー側で1として扱われる(=重複や桁ズレを防ぐ)
-    await memberForm.locator('input[name="cap_number"]').fill("01");
-    await memberForm.locator('select[name="position"]').selectOption("gk");
-    await submitAndWait(memberForm);
+    await memberRow.locator('input[name^="cap_number_"]').fill("01");
+    await memberRow.locator('select[name^="position_"]').selectOption("gk");
 
-    // 保存後の再読込で 1 と表示される
+    // サーバーアクションのPOST完了を待つ(同一URLへのredirectのため)
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.request().method() === "POST" && r.status() < 400
+      ),
+      page.click('button:has-text("一括更新")'),
+    ]);
+
+    // 保存後の再読込で 1 と表示される(uncontrolled inputのため再読込が必要)
     await page.goto(`${BASE}/admin`);
     const memberCap = await page
-      .locator('form:has(input[name="cap_number"])')
-      .nth(1)
-      .locator('input[name="cap_number"]')
+      .locator('div:has(input[name^="cap_number_"]):has-text("定選手")')
+      .last()
+      .locator('input[name^="cap_number_"]')
       .inputValue();
     if (memberCap !== "1") throw new Error(`帽子番号が1でない: ${memberCap}`);
   });
