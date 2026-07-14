@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "vercel": {
+      "type": "http",
+      "url": "https://mcp.vercel.com/fjwk14s-projects/kgtool"
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=jxxrwqtqlkzscrbwrulp&read_only=true&features=database,docs"
+    }
+  }
+}

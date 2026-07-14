@@ -1,0 +1,9 @@
+[agents]
+max_threads = 4
+max_depth = 1
+
+[mcp_servers.vercel]
+url = "https://mcp.vercel.com/fjwk14s-projects/kgtool"
+
+[mcp_servers.supabase]
+url = "https://mcp.supabase.com/mcp?project_ref=jxxrwqtqlkzscrbwrulp&read_only=true&features=database,docs"
