@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -5,23 +6,19 @@ import { can, ROLE_LABELS } from "@/lib/permissions";
 import { countUnreadComments, type CommentForUnread } from "@/lib/notifications";
 import { signOut } from "@/app/login/actions";
 
-export default async function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { team, profile, membership, userId } = await requireMembership();
+// 未読バッジは別クエリ(コメント+既読)が必要なため、ヘッダー/ナビ本体の描画を
+// 待たせないようSuspenseで分離してストリーミングする。
+async function UnreadBadge({ teamId, userId }: { teamId: string; userId: string }) {
   const supabase = await createClient();
-
   const [{ data: commentsData }, { data: readsData }] = await Promise.all([
     supabase
       .from("clip_comments")
       .select("id, clip_id, parent_comment_id, user_id, mention_user_ids, created_at")
-      .eq("team_id", team.id),
+      .eq("team_id", teamId),
     supabase
       .from("comment_reads")
       .select("clip_id, last_read_at")
-      .eq("team_id", team.id)
+      .eq("team_id", teamId)
       .eq("user_id", userId),
   ]);
   const unreadCount = countUnreadComments(
@@ -29,10 +26,27 @@ export default async function AppLayout({
     readsData ?? [],
     userId
   );
+  if (unreadCount <= 0) return null;
+  return (
+    <span
+      data-testid="unread-badge"
+      className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-none text-white"
+    >
+      {unreadCount > 99 ? "99+" : unreadCount}
+    </span>
+  );
+}
+
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { team, profile, membership, userId } = await requireMembership();
 
   const navItems = [
     { href: "/dashboard", label: "ホーム", icon: "🏠" },
-    { href: "/matches", label: "試合", icon: "🎬", badge: unreadCount },
+    { href: "/matches", label: "試合", icon: "🎬", showUnreadBadge: true },
     { href: "/practices", label: "練習", icon: "🏊" },
     { href: "/rankings", label: "ランキング", icon: "🏆" },
     ...(can.manageTeam(membership)
@@ -76,13 +90,10 @@ export default async function AppLayout({
             >
               <span className="relative text-lg leading-none">
                 {item.icon}
-                {"badge" in item && (item.badge ?? 0) > 0 && (
-                  <span
-                    data-testid="unread-badge"
-                    className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-none text-white"
-                  >
-                    {(item.badge ?? 0) > 99 ? "99+" : item.badge}
-                  </span>
+                {"showUnreadBadge" in item && item.showUnreadBadge && (
+                  <Suspense fallback={null}>
+                    <UnreadBadge teamId={team.id} userId={userId} />
+                  </Suspense>
                 )}
               </span>
               {item.label}

@@ -21,22 +21,25 @@ export const requireMembership = cache(async (): Promise<SessionContext> => {
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("id, email, name, family_name, given_name, avatar_url")
-    .eq("id", user.id)
-    .single();
-
-  // 複数チーム所属時は最初に参加したチームを一貫して使う
-  // (MVPはシングルチーム前提。チーム切替UIは将来対応)
-  const { data: membership } = await supabase
-    .from("memberships")
-    .select("id, team_id, user_id, role, secondary_role, status, cap_number, is_gk")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  // プロフィールとメンバーシップは互いに依存しないため並列取得し、
+  // 直列往復を1回分減らす(認証チェックは全ページ・全Server Actionで走るため効果が大きい)。
+  const [{ data: profile }, { data: membership }] = await Promise.all([
+    supabase
+      .from("users")
+      .select("id, email, name, family_name, given_name, avatar_url")
+      .eq("id", user.id)
+      .single(),
+    // 複数チーム所属時は最初に参加したチームを一貫して使う
+    // (MVPはシングルチーム前提。チーム切替UIは将来対応)
+    supabase
+      .from("memberships")
+      .select("id, team_id, user_id, role, secondary_role, status, cap_number, is_gk")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   if (!membership) redirect("/onboarding");
 
