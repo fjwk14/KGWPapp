@@ -12,9 +12,19 @@ import {
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
-import { ATTENDANCE_LABELS, ATTENDANCE_STYLES } from "@/lib/constants";
+import {
+  ATTENDANCE_LABELS,
+  ATTENDANCE_STYLES,
+  PRACTICE_STATUS_LABELS,
+} from "@/lib/constants";
 import type { Practice, PracticeAttendance, Profile } from "@/lib/types";
-import { saveAttendance, updatePractice, deletePractice } from "../actions";
+import {
+  markPracticeDone,
+  saveAttendance,
+  submitMyAttendance,
+  updatePractice,
+  deletePractice,
+} from "../actions";
 
 const STATUS_ORDER = ["present", "absent", "late", "excused"] as const;
 
@@ -27,7 +37,7 @@ export default async function PracticeDetailPage({
 }) {
   const { id } = await params;
   const { error, ok } = await searchParams;
-  const { team, membership } = await requireMembership();
+  const { team, userId, membership } = await requireMembership();
   const supabase = await createClient();
 
   const [{ data: practiceData }, { data: membersData }, { data: attData }] =
@@ -35,7 +45,7 @@ export default async function PracticeDetailPage({
       supabase
         .from("practices")
         .select(
-          "id, practice_date, start_time, end_time, location, menu, note"
+          "id, practice_date, start_time, end_time, location, menu, note, status"
         )
         .eq("id", id)
         .eq("team_id", team.id)
@@ -55,8 +65,16 @@ export default async function PracticeDetailPage({
   if (!practiceData) notFound();
   const practice = practiceData as Pick<
     Practice,
-    "id" | "practice_date" | "start_time" | "end_time" | "location" | "menu" | "note"
+    | "id"
+    | "practice_date"
+    | "start_time"
+    | "end_time"
+    | "location"
+    | "menu"
+    | "note"
+    | "status"
   >;
+  const isScheduled = practice.status === "scheduled";
 
   const members = (
     (membersData ?? []) as unknown as {
@@ -78,16 +96,19 @@ export default async function PracticeDetailPage({
 
   const canRecord = can.recordPractice(membership);
 
-  // 出欠サマリ
+  // 出欠サマリ。未回答は「出席」扱いにせず、別枠でカウントする
+  // (予定はまだ全員が回答しているとは限らない)。
   const counts: Record<string, number> = {
     present: 0,
     absent: 0,
     late: 0,
     excused: 0,
   };
+  let unansweredCount = 0;
   for (const m of members) {
-    const st = statusByUser.get(m.user_id) ?? "present";
-    counts[st] = (counts[st] ?? 0) + 1;
+    const st = statusByUser.get(m.user_id);
+    if (st) counts[st] = (counts[st] ?? 0) + 1;
+    else unansweredCount += 1;
   }
 
   return (
@@ -97,6 +118,15 @@ export default async function PracticeDetailPage({
       </Link>
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-lg font-bold">{practice.practice_date} の練習</h1>
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+            isScheduled
+              ? "bg-amber-100 text-amber-700"
+              : "bg-slate-100 text-slate-600"
+          }`}
+        >
+          {PRACTICE_STATUS_LABELS[practice.status]}
+        </span>
       </div>
       <ErrorBanner message={error} />
       {ok === "1" && (
@@ -203,14 +233,42 @@ export default async function PracticeDetailPage({
         </Card>
       )}
 
+      {/* 自分の出欠を申告(全員が使える。予定でも実施済みでも回答・修正できる) */}
+      <Card className="space-y-2">
+        <h2 className="text-sm font-semibold text-slate-600">あなたの出欠</h2>
+        <form action={submitMyAttendance} className="grid grid-cols-4 gap-2">
+          <input type="hidden" name="practice_id" value={practice.id} />
+          {STATUS_ORDER.map((st) => (
+            <Button
+              key={st}
+              type="submit"
+              name="status"
+              value={st}
+              variant={statusByUser.get(userId) === st ? "primary" : "secondary"}
+              className="px-1 text-xs"
+            >
+              {ATTENDANCE_LABELS[st]}
+            </Button>
+          ))}
+        </form>
+      </Card>
+
       {/* 出欠サマリ */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className={`grid gap-2 ${unansweredCount > 0 ? "grid-cols-5" : "grid-cols-4"}`}>
         {STATUS_ORDER.map((st) => (
           <Card key={st} className="p-2 text-center">
             <div className="text-xl font-bold tabular-nums">{counts[st]}</div>
             <div className="text-[11px] text-slate-500">{ATTENDANCE_LABELS[st]}</div>
           </Card>
         ))}
+        {unansweredCount > 0 && (
+          <Card className="p-2 text-center">
+            <div className="text-xl font-bold tabular-nums text-slate-400">
+              {unansweredCount}
+            </div>
+            <div className="text-[11px] text-slate-500">未回答</div>
+          </Card>
+        )}
       </div>
 
       {/* 出欠(マネージャーは編集、それ以外は閲覧) */}
@@ -264,7 +322,7 @@ export default async function PracticeDetailPage({
             出欠({members.length}人)
           </h2>
           {members.map((m) => {
-            const cur = statusByUser.get(m.user_id) ?? "present";
+            const cur = statusByUser.get(m.user_id);
             return (
               <Card key={m.user_id} className="flex items-center gap-2 p-2">
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">
@@ -272,14 +330,25 @@ export default async function PracticeDetailPage({
                   {m.name}
                 </span>
                 <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${ATTENDANCE_STYLES[cur]}`}
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    cur ? ATTENDANCE_STYLES[cur] : "bg-slate-100 text-slate-400"
+                  }`}
                 >
-                  {ATTENDANCE_LABELS[cur]}
+                  {cur ? ATTENDANCE_LABELS[cur] : "未回答"}
                 </span>
               </Card>
             );
           })}
         </section>
+      )}
+
+      {canRecord && isScheduled && (
+        <form action={markPracticeDone}>
+          <input type="hidden" name="practice_id" value={practice.id} />
+          <Button type="submit" variant="secondary" className="w-full">
+            ✓ この練習を実施済みにする
+          </Button>
+        </form>
       )}
 
       {canRecord && (

@@ -24,6 +24,7 @@ import type {
 } from "@/lib/types";
 import { addComment, addTag, deleteComment, removeTag } from "../actions";
 import ViewTracker from "./view-tracker";
+import MarkCommentsRead from "./mark-read";
 
 export default async function ClipDetailPage({
   params,
@@ -117,6 +118,7 @@ export default async function ClipDetailPage({
   return (
     <>
       <ViewTracker clipId={clip.id} />
+      <MarkCommentsRead clipId={clip.id} />
       <ErrorBanner message={error} />
 
       <Card className="space-y-2">
@@ -225,6 +227,7 @@ export default async function ClipDetailPage({
         {threads.map(({ root, replies }) => (
           <div
             key={root.id}
+            data-testid="comment-thread"
             className="overflow-hidden rounded-xl border border-slate-200"
           >
             <CommentBlock

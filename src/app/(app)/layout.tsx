@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireMembership } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 import { can, ROLE_LABELS } from "@/lib/permissions";
+import { countUnreadComments, type CommentForUnread } from "@/lib/notifications";
 import { signOut } from "@/app/login/actions";
 
 export default async function AppLayout({
@@ -8,11 +10,29 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { team, profile, membership } = await requireMembership();
+  const { team, profile, membership, userId } = await requireMembership();
+  const supabase = await createClient();
+
+  const [{ data: commentsData }, { data: readsData }] = await Promise.all([
+    supabase
+      .from("clip_comments")
+      .select("id, clip_id, parent_comment_id, user_id, mention_user_ids, created_at")
+      .eq("team_id", team.id),
+    supabase
+      .from("comment_reads")
+      .select("clip_id, last_read_at")
+      .eq("team_id", team.id)
+      .eq("user_id", userId),
+  ]);
+  const unreadCount = countUnreadComments(
+    (commentsData ?? []) as CommentForUnread[],
+    readsData ?? [],
+    userId
+  );
 
   const navItems = [
     { href: "/dashboard", label: "ホーム", icon: "🏠" },
-    { href: "/matches", label: "試合", icon: "🎬" },
+    { href: "/matches", label: "試合", icon: "🎬", badge: unreadCount },
     { href: "/practices", label: "練習", icon: "🏊" },
     { href: "/rankings", label: "ランキング", icon: "🏆" },
     ...(can.manageTeam(membership)
@@ -27,7 +47,7 @@ export default async function AppLayout({
           {team.name}
         </Link>
         <div className="flex items-center gap-3 text-sm">
-          <Link href="/profile" className="text-slate-500 hover:text-brand-600">
+          <Link href="/me" className="text-slate-500 hover:text-brand-600">
             {profile.name}
             <span className="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs">
               {ROLE_LABELS[membership.role]}
@@ -52,9 +72,19 @@ export default async function AppLayout({
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-1 flex-col items-center gap-0.5 py-2 text-xs text-slate-600 hover:text-brand-600"
+              className="relative flex flex-1 flex-col items-center gap-0.5 py-2 text-xs text-slate-600 hover:text-brand-600"
             >
-              <span className="text-lg leading-none">{item.icon}</span>
+              <span className="relative text-lg leading-none">
+                {item.icon}
+                {"badge" in item && (item.badge ?? 0) > 0 && (
+                  <span
+                    data-testid="unread-badge"
+                    className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-none text-white"
+                  >
+                    {(item.badge ?? 0) > 99 ? "99+" : item.badge}
+                  </span>
+                )}
+              </span>
               {item.label}
             </Link>
           ))}

@@ -123,6 +123,14 @@ export interface ClipComment {
   created_at: string;
 }
 
+export interface CommentRead {
+  id: string;
+  team_id: string;
+  clip_id: string;
+  user_id: string;
+  last_read_at: string;
+}
+
 export interface TagTemplate {
   id: string;
   team_id: string;
@@ -134,6 +142,7 @@ export interface TagTemplate {
 }
 
 export type AttendanceStatus = "present" | "absent" | "late" | "excused";
+export type PracticeStatus = "scheduled" | "done";
 
 export interface Practice {
   id: string;
@@ -144,6 +153,7 @@ export interface Practice {
   location: string | null;
   menu: string | null;
   note: string | null;
+  status: PracticeStatus;
   created_by: string | null;
   created_at: string;
 }

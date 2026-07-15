@@ -33,9 +33,10 @@ try {
     await page.fill("#password", "password123");
     await page.click('button[type="submit"]');
     await page.waitForURL("**/onboarding");
+    await page.click("summary:has-text('新しくチームを作る')");
     await page.fill("#name", "タグ検証部");
     await page.fill("#slug", `tag${uniq}`);
-    await page.click('button[type="submit"]');
+    await page.click('button:has-text("チームを作成")');
     await page.waitForURL("**/dashboard");
     await page.goto(`${BASE}/admin/tags`);
     await page.waitForSelector("text=タグテンプレート管理");

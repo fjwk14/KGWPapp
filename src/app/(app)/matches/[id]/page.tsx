@@ -13,6 +13,7 @@ import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
 import { formatSeconds, matchVideoLabel, safeHttpUrl } from "@/lib/video";
+import { unreadClipIds, type CommentForUnread } from "@/lib/notifications";
 import type { ClipTag, Match, MatchVideo, VideoClip } from "@/lib/types";
 import { addMatchVideo, deleteMatchVideo } from "../actions";
 
@@ -25,7 +26,7 @@ export default async function MatchDetailPage({
 }) {
   const { id } = await params;
   const { error } = await searchParams;
-  const { membership } = await requireMembership();
+  const { membership, team, userId } = await requireMembership();
   const supabase = await createClient();
 
   const { data: match } = await supabase
@@ -53,15 +54,33 @@ export default async function MatchDetailPage({
   const clips = (clipsData ?? []) as VideoClip[];
 
   let allTags: ClipTag[] = [];
+  let unreadClips = new Set<string>();
   if (clips.length > 0) {
-    const { data: tagsData } = await supabase
-      .from("clip_tags")
-      .select("*")
-      .in(
-        "clip_id",
-        clips.map((c) => c.id)
-      );
+    const [{ data: tagsData }, { data: commentsData }, { data: readsData }] =
+      await Promise.all([
+        supabase
+          .from("clip_tags")
+          .select("*")
+          .in(
+            "clip_id",
+            clips.map((c) => c.id)
+          ),
+        supabase
+          .from("clip_comments")
+          .select("id, clip_id, parent_comment_id, user_id, mention_user_ids, created_at")
+          .eq("team_id", team.id),
+        supabase
+          .from("comment_reads")
+          .select("clip_id, last_read_at")
+          .eq("team_id", team.id)
+          .eq("user_id", userId),
+      ]);
     allTags = (tagsData ?? []) as ClipTag[];
+    unreadClips = unreadClipIds(
+      (commentsData ?? []) as CommentForUnread[],
+      readsData ?? [],
+      userId
+    );
   }
   const isStaff = can.createClip(membership);
 
@@ -239,7 +258,16 @@ export default async function MatchDetailPage({
             <Link key={clip.id} href={`/clips/${clip.id}`} className="block">
               <Card className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold">{clip.title}</span>
+                  <span className="font-semibold">
+                    {unreadClips.has(clip.id) && (
+                      <span
+                        data-testid="clip-unread-dot"
+                        className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-600 align-middle"
+                        aria-label="未読コメントあり"
+                      />
+                    )}
+                    {clip.title}
+                  </span>
                   <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-mono">
                     {clip.quarter === 5 ? "PSO " : clip.quarter ? `Q${clip.quarter} ` : ""}
                     {formatSeconds(clip.start_time_seconds)}〜

@@ -21,8 +21,11 @@ function cleanText(v: FormDataEntryValue | null, max = 4000): string | null {
   return s.slice(0, max);
 }
 
-// 練習を新規作成し、在籍メンバー全員の出欠を「出席」で初期化する。
-// マネージャーは詳細画面で欠席者だけを切り替えれば済む。
+// 練習を新規作成する。2つの使い方がある:
+//   - 当日その場で記録(is_schedule無し): status=doneとし、在籍メンバー全員の
+//     出欠を「出席」で初期化する。マネージャーは欠席者だけ切り替えればよい。
+//   - 先に予定として作成(is_schedule=1): status=scheduledとし、出欠は
+//     空のまま各部員が自分で事前申告する(submitMyAttendance)。
 export async function createPractice(formData: FormData) {
   const { team, userId, membership } = await requireMembership();
   if (!can.recordPractice(membership)) {
@@ -33,6 +36,7 @@ export async function createPractice(formData: FormData) {
   const practiceDate = dateRe.test(rawDate)
     ? rawDate
     : new Date().toISOString().slice(0, 10);
+  const isSchedule = String(formData.get("is_schedule") ?? "") === "1";
 
   const supabase = await createClient();
   const { data: practice, error } = await supabase
@@ -45,6 +49,7 @@ export async function createPractice(formData: FormData) {
       location: cleanText(formData.get("location"), 200),
       menu: cleanText(formData.get("menu")),
       note: cleanText(formData.get("note")),
+      status: isSchedule ? "scheduled" : "done",
       created_by: userId,
     })
     .select("id")
@@ -53,24 +58,76 @@ export async function createPractice(formData: FormData) {
     backTo("/practices", `練習の記録に失敗しました: ${error?.message ?? ""}`);
   }
 
-  // 在籍メンバーを既定「出席」で登録(欠席者は詳細画面で切り替える)
-  const { data: members } = await supabase
-    .from("memberships")
-    .select("user_id")
-    .eq("team_id", team.id)
-    .eq("status", "active");
-  const rows = (members ?? []).map((m) => ({
-    practice_id: practice.id,
-    team_id: team.id,
-    user_id: m.user_id,
-    status: "present" as const,
-  }));
-  if (rows.length > 0) {
-    await supabase.from("practice_attendances").insert(rows);
+  if (!isSchedule) {
+    // 在籍メンバーを既定「出席」で登録(欠席者は詳細画面で切り替える)
+    const { data: members } = await supabase
+      .from("memberships")
+      .select("user_id")
+      .eq("team_id", team.id)
+      .eq("status", "active");
+    const rows = (members ?? []).map((m) => ({
+      practice_id: practice.id,
+      team_id: team.id,
+      user_id: m.user_id,
+      status: "present" as const,
+    }));
+    if (rows.length > 0) {
+      await supabase.from("practice_attendances").insert(rows);
+    }
   }
 
   revalidatePath("/practices");
   redirect(`/practices/${practice.id}`);
+}
+
+// 自分の出欠を事前申告する(マネージャー以外の全メンバーが使える)。
+export async function submitMyAttendance(formData: FormData) {
+  const { team, userId } = await requireMembership();
+
+  const practiceId = z.string().uuid().safeParse(formData.get("practice_id"));
+  if (!practiceId.success) backTo("/practices", "不正な練習IDです");
+
+  const raw = String(formData.get("status") ?? "");
+  const status = (ATTENDANCE_STATUSES as readonly string[]).includes(raw)
+    ? raw
+    : "present";
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("practice_attendances").upsert(
+    { practice_id: practiceId.data, team_id: team.id, user_id: userId, status },
+    { onConflict: "practice_id,user_id" }
+  );
+  if (error) {
+    backTo(`/practices/${practiceId.data}`, `申告に失敗しました: ${error.message}`);
+  }
+
+  revalidatePath(`/practices/${practiceId.data}`);
+  revalidatePath("/practices");
+  backTo(`/practices/${practiceId.data}?ok=1`);
+}
+
+// 予定を「実施済み」に切り替える(マネージャー以上)。
+export async function markPracticeDone(formData: FormData) {
+  const { membership } = await requireMembership();
+  if (!can.recordPractice(membership)) {
+    backTo("/practices", "この操作には権限が必要です(マネージャー以上)");
+  }
+  const practiceId = z.string().uuid().safeParse(formData.get("practice_id"));
+  if (!practiceId.success) backTo("/practices", "不正な練習IDです");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("practices")
+    .update({ status: "done" })
+    .eq("id", practiceId.data)
+    .select("id");
+  if (error || !data?.length) {
+    backTo(`/practices/${practiceId.data}`, "更新できませんでした");
+  }
+
+  revalidatePath(`/practices/${practiceId.data}`);
+  revalidatePath("/practices");
+  backTo(`/practices/${practiceId.data}?ok=1`);
 }
 
 export async function updatePractice(formData: FormData) {

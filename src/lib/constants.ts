@@ -47,6 +47,11 @@ export const ATTENDANCE_STYLES: Record<string, string> = {
   excused: "bg-slate-200 text-slate-600",
 };
 
+export const PRACTICE_STATUS_LABELS: Record<string, string> = {
+  scheduled: "予定",
+  done: "実施済み",
+};
+
 // メンバーのポジション表示(GK優先、次に field_position)
 export function positionLabel(isGk: boolean, fieldPosition: number | null): string {
   if (isGk) return "GK";

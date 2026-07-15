@@ -75,7 +75,7 @@ try {
     await page.goto(`${BASE}/dashboard`);
     await page.click('nav a[href="/practices"]');
     await page.waitForURL("**/practices");
-    await page.waitForSelector("text=新しい練習を記録");
+    await page.waitForSelector("text=練習を作る");
   });
 
   let practiceUrl = "";
