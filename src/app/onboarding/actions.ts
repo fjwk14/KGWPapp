@@ -12,9 +12,12 @@ export async function joinTeam(formData: FormData) {
   }
 
   const supabase = await createClient();
+  // ミドルウェアが既にgetUser()で検証済みのため、ここではgetSession()で
+  // cookieのセッションを信頼し、認証サーバーへの再往復を省く。
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect("/login");
 
   const { error } = await supabase.rpc("join_team_by_code", { p_code: code });
@@ -38,9 +41,12 @@ export async function createTeam(formData: FormData) {
   }
 
   const supabase = await createClient();
+  // ミドルウェアが既にgetUser()で検証済みのため、ここではgetSession()で
+  // cookieのセッションを信頼し、認証サーバーへの再往復を省く。
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect("/login");
 
   // トリガー on_team_created が作成者を admin として登録し、初期タグをシードする

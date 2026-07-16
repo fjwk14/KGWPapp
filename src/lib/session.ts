@@ -15,9 +15,13 @@ export interface SessionContext {
 // React cache()でリクエスト内の重複呼び出し(layout + page)を1回に集約。
 export const requireMembership = cache(async (): Promise<SessionContext> => {
   const supabase = await createClient();
+  // getUser()ではなくgetSession()を使う: このリクエストはミドルウェアの
+  // updateSession()で既にgetUser()による認証サーバーへの検証を通過済みなので、
+  // ここでの再検証(ネットワーク往復)は省略し、cookieのセッションをそのまま信頼する。
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (!user) redirect("/login");
 

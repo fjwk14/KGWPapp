@@ -11,9 +11,12 @@ export default async function OnboardingPage({
 }) {
   const params = await searchParams;
   const supabase = await createClient();
+  // ミドルウェアが既にgetUser()で検証済みのため、ここではgetSession()で
+  // cookieのセッションを信頼し、認証サーバーへの再往復を省く。
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect("/login");
 
   const { data: membership } = await supabase
