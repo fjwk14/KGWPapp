@@ -64,6 +64,11 @@ export default async function PracticesPage({
     <>
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">🏊 練習記録・出欠</h1>
+        {can.viewTeamCondition(membership) && (
+          <Link href="/condition" className="shrink-0 text-sm text-brand-600 underline">
+            🩺 コンディション →
+          </Link>
+        )}
       </div>
       <ErrorBanner message={error} />
 

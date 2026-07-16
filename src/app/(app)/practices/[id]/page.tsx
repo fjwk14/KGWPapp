@@ -17,11 +17,21 @@ import {
   ATTENDANCE_STYLES,
   PRACTICE_STATUS_LABELS,
 } from "@/lib/constants";
-import type { Practice, PracticeAttendance, Profile } from "@/lib/types";
+import { feedbackTargetOf } from "@/lib/feedback";
+import { todayJST } from "@/lib/condition";
+import type {
+  ConditionLog,
+  PeerFeedback,
+  Practice,
+  PracticeAttendance,
+  Profile,
+} from "@/lib/types";
+import ConditionForm from "../../condition/condition-form";
 import {
   markPracticeDone,
   saveAttendance,
   submitMyAttendance,
+  submitPeerFeedback,
   updatePractice,
   deletePractice,
 } from "../actions";
@@ -40,27 +50,45 @@ export default async function PracticeDetailPage({
   const { team, userId, membership } = await requireMembership();
   const supabase = await createClient();
 
-  const [{ data: practiceData }, { data: membersData }, { data: attData }] =
-    await Promise.all([
-      supabase
-        .from("practices")
-        .select(
-          "id, practice_date, start_time, end_time, location, menu, note, status"
-        )
-        .eq("id", id)
-        .eq("team_id", team.id)
-        .maybeSingle(),
-      supabase
-        .from("memberships")
-        .select("user_id, cap_number, users(name)")
-        .eq("team_id", team.id)
-        .eq("status", "active")
-        .order("cap_number"),
-      supabase
-        .from("practice_attendances")
-        .select("user_id, status")
-        .eq("practice_id", id),
-    ]);
+  const today = todayJST();
+  const [
+    { data: practiceData },
+    { data: membersData },
+    { data: attData },
+    { data: fbData },
+    { data: myConditionData },
+  ] = await Promise.all([
+    supabase
+      .from("practices")
+      .select(
+        "id, practice_date, start_time, end_time, location, menu, note, status"
+      )
+      .eq("id", id)
+      .eq("team_id", team.id)
+      .maybeSingle(),
+    supabase
+      .from("memberships")
+      .select("user_id, cap_number, users(name)")
+      .eq("team_id", team.id)
+      .eq("status", "active")
+      .order("cap_number"),
+    supabase
+      .from("practice_attendances")
+      .select("user_id, status")
+      .eq("practice_id", id),
+    supabase
+      .from("peer_feedbacks")
+      .select("id, from_user_id, to_user_id, good, advice, created_at")
+      .eq("practice_id", id)
+      .order("created_at"),
+    supabase
+      .from("condition_logs")
+      .select("log_date, condition, motivation, sleep_hours, pain_level, pain_note")
+      .eq("team_id", team.id)
+      .eq("user_id", userId)
+      .eq("log_date", today)
+      .maybeSingle(),
+  ]);
 
   if (!practiceData) notFound();
   const practice = practiceData as Pick<
@@ -95,6 +123,41 @@ export default async function PracticeDetailPage({
   );
 
   const canRecord = can.recordPractice(membership);
+
+  // ---------- 練習後ピアFB(実施済みの練習のみ) ----------
+  // 参加者(出席・遅刻)でランダムな円環ペアを作る。practice_idシードの
+  // 決定的シャッフルなので、誰がいつ開いても同じ相手になる。
+  const feedbacks = (fbData ?? []) as Pick<
+    PeerFeedback,
+    "id" | "from_user_id" | "to_user_id" | "good" | "advice" | "created_at"
+  >[];
+  const participantIds = members
+    .filter((m) => {
+      const st = statusByUser.get(m.user_id);
+      return st === "present" || st === "late";
+    })
+    .map((m) => m.user_id);
+  const myFbTarget =
+    practice.status === "done"
+      ? feedbackTargetOf(practice.id, participantIds, userId)
+      : null;
+  const myFb = feedbacks.find((f) => f.from_user_id === userId) ?? null;
+  const nameById = new Map(members.map((m) => [m.user_id, m]));
+  const displayName = (uid: string) => {
+    const m = nameById.get(uid);
+    return m ? `${m.cap_number ? `#${m.cap_number} ` : ""}${m.name}` : "不明";
+  };
+
+  // ---------- 今日のコンディション(この練習が今日の場合のみ) ----------
+  const showCondition = practice.practice_date === today;
+  const rawCondition = (myConditionData ?? null) as ConditionLog | null;
+  const myCondition = rawCondition
+    ? {
+        ...rawCondition,
+        sleep_hours:
+          rawCondition.sleep_hours == null ? null : Number(rawCondition.sleep_hours),
+      }
+    : null;
 
   // 出欠サマリ。未回答は「出席」扱いにせず、別枠でカウントする
   // (予定はまだ全員が回答しているとは限らない)。
@@ -252,6 +315,104 @@ export default async function PracticeDetailPage({
           ))}
         </form>
       </Card>
+
+      {/* 今日のコンディション(練習日が今日のときだけ、出欠のついでに記録) */}
+      {showCondition && (
+        <Card className="space-y-3">
+          <details open={!myCondition}>
+            <summary className="cursor-pointer text-sm font-semibold text-slate-600">
+              🩺 今日のコンディション
+              {myCondition ? (
+                <span className="ml-2 text-xs font-normal text-emerald-600">記録済み(タップで修正)</span>
+              ) : (
+                <span className="ml-2 text-xs font-normal text-amber-600">未記録</span>
+              )}
+            </summary>
+            <div className="pt-3">
+              <ConditionForm
+                logDate={today}
+                redirectTo={`/practices/${practice.id}`}
+                existing={myCondition}
+              />
+            </div>
+          </details>
+        </Card>
+      )}
+
+      {/* 練習後ピアFB(実施済みの練習のみ・チーム内公開) */}
+      {practice.status === "done" && participantIds.length >= 2 && (
+        <Card className="space-y-3">
+          <h2 className="text-sm font-semibold text-slate-600">
+            🤝 今日のひとことFB
+          </h2>
+          {myFbTarget ? (
+            <>
+              <p className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-900">
+                あなたのFB相手:{" "}
+                <span className="font-bold">{displayName(myFbTarget)}</span>
+                <span className="mt-0.5 block text-xs text-brand-700">
+                  練習ごとにランダムで決まります。良かったプレーをひとこと伝えましょう。
+                </span>
+              </p>
+              <form action={submitPeerFeedback} className="space-y-2">
+                <input type="hidden" name="practice_id" value={practice.id} />
+                <input type="hidden" name="to_user_id" value={myFb?.to_user_id ?? myFbTarget} />
+                <div>
+                  <Label htmlFor="fb_good">良かったところ(必須)</Label>
+                  <Textarea
+                    name="good"
+                    id="fb_good"
+                    rows={2}
+                    required
+                    maxLength={500}
+                    defaultValue={myFb?.good ?? ""}
+                    placeholder="例: カウンターの戻りが速くて助かった"
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="fb_advice">アドバイス・応援(任意)</Label>
+                  <Textarea
+                    name="advice"
+                    id="fb_advice"
+                    rows={2}
+                    maxLength={500}
+                    defaultValue={myFb?.advice ?? ""}
+                    placeholder="例: シュートのときもう半身浮くともっと強い"
+                    className="text-sm"
+                  />
+                </div>
+                <Button type="submit" className="w-full">
+                  {myFb ? "FBを書き直す" : "FBを送る"}
+                </Button>
+              </form>
+            </>
+          ) : (
+            <p className="text-xs text-slate-400">
+              この練習の参加者(出席・遅刻)にFB相手が割り当てられます。
+            </p>
+          )}
+          {feedbacks.length > 0 && (
+            <div className="space-y-2 border-t border-slate-100 pt-2">
+              <p className="text-xs font-semibold text-slate-500">
+                みんなのFB({feedbacks.length}件・チーム内公開)
+              </p>
+              {feedbacks.map((f) => (
+                <div key={f.id} className="rounded-lg bg-slate-50 px-3 py-2">
+                  <p className="text-[11px] text-slate-500">
+                    {displayName(f.from_user_id)} →{" "}
+                    <span className="font-semibold">{displayName(f.to_user_id)}</span>
+                  </p>
+                  <p className="text-sm text-slate-700">👍 {f.good}</p>
+                  {f.advice && (
+                    <p className="text-sm text-slate-600">💬 {f.advice}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* 出欠サマリ */}
       <div className={`grid gap-2 ${unansweredCount > 0 ? "grid-cols-5" : "grid-cols-4"}`}>

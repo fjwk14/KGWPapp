@@ -12,14 +12,28 @@ import {
 import { buildGkPerformance, buildPerformanceProfiles } from "@/lib/performance";
 import { receivedCommentIds, type CommentForUnread } from "@/lib/notifications";
 import { monthlyAttendanceSummary } from "@/lib/practices";
+import { todayJST, CONDITION_LABELS } from "@/lib/condition";
 import type { RosterEntry, StatsEvent } from "@/lib/stats";
-import type { AttendanceStatus, ClipComment, Profile } from "@/lib/types";
+import type {
+  AttendanceStatus,
+  ClipComment,
+  ConditionLog,
+  PeerFeedback,
+  Profile,
+} from "@/lib/types";
+import ConditionForm from "../condition/condition-form";
 
-// 選手個人のマイページ。プレー評価・フィジカル評価・出席率・最近もらった
-// コメントを1画面にまとめる(詳細な軸別レーダーは /physical/[userId] へ)。
-export default async function MyPage() {
+// 選手個人のマイページ。コンディション・プレー評価・フィジカル評価・出席率・
+// もらったFB/コメントを1画面にまとめる(詳細な軸別レーダーは /physical/[userId] へ)。
+export default async function MyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ok?: string }>;
+}) {
+  const { ok } = await searchParams;
   const { team, userId, profile, membership } = await requireMembership();
   const supabase = await createClient();
+  const today = todayJST();
 
   const [
     { data: myMembershipData },
@@ -30,6 +44,8 @@ export default async function MyPage() {
     { data: practicesData },
     { data: commentsData },
     { data: clipsData },
+    { data: conditionData },
+    { data: receivedFbData },
   ] = await Promise.all([
     supabase
       .from("memberships")
@@ -62,6 +78,20 @@ export default async function MyPage() {
       .eq("team_id", team.id)
       .order("created_at", { ascending: false }),
     supabase.from("video_clips").select("id, title, match_id").eq("team_id", team.id),
+    supabase
+      .from("condition_logs")
+      .select("log_date, condition, motivation, sleep_hours, pain_level, pain_note")
+      .eq("team_id", team.id)
+      .eq("user_id", userId)
+      .order("log_date", { ascending: false })
+      .limit(7),
+    supabase
+      .from("peer_feedbacks")
+      .select("id, practice_id, from_user_id, good, advice, created_at")
+      .eq("team_id", team.id)
+      .eq("to_user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
 
   const fieldPosition = (myMembershipData as { field_position: number | null } | null)
@@ -140,6 +170,20 @@ export default async function MyPage() {
       )
   ).slice(0, 6);
 
+  // ---------- コンディション(今日の記録+直近の推移) ----------
+  const conditionLogs = ((conditionData ?? []) as ConditionLog[]).map((l) => ({
+    ...l,
+    sleep_hours: l.sleep_hours == null ? null : Number(l.sleep_hours),
+  }));
+  const todayCondition = conditionLogs.find((l) => l.log_date === today) ?? null;
+
+  // ---------- もらったFB(練習後ピアフィードバック) ----------
+  const receivedFbs = (receivedFbData ?? []) as Pick<
+    PeerFeedback,
+    "id" | "practice_id" | "from_user_id" | "good" | "advice" | "created_at"
+  >[];
+  const memberNameById = new Map(roster.map((r) => [r.user_id, r.name]));
+
   // ---------- 最近もらったコメント ----------
   const comments = (commentsData ?? []) as unknown as (ClipComment & {
     users: Pick<Profile, "name"> | null;
@@ -171,6 +215,47 @@ export default async function MyPage() {
         <Link href="/profile" className="shrink-0 text-xs text-brand-600 underline">
           プロフィール編集 →
         </Link>
+      </Card>
+
+      {ok === "1" && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          ✓ 記録しました
+        </div>
+      )}
+
+      {/* 今日のコンディション */}
+      <Card className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-slate-600">
+            🩺 今日のコンディション
+          </h2>
+          <Link
+            href={`/condition/${userId}`}
+            className="shrink-0 text-xs text-brand-600 underline"
+          >
+            個人カルテ →
+          </Link>
+        </div>
+        <details open={!todayCondition}>
+          <summary className="cursor-pointer text-xs text-slate-500">
+            {todayCondition ? (
+              <>
+                記録済み:{" "}
+                <span className="font-semibold text-emerald-600">
+                  {CONDITION_LABELS[todayCondition.condition]}
+                </span>
+                {todayCondition.sleep_hours != null &&
+                  ` / 睡眠${todayCondition.sleep_hours}h`}
+                (タップで修正)
+              </>
+            ) : (
+              "今日はまだ未記録です(タップして記録)"
+            )}
+          </summary>
+          <div className="pt-3">
+            <ConditionForm logDate={today} redirectTo="/me" existing={todayCondition} />
+          </div>
+        </details>
       </Card>
 
       <Card className="space-y-3">
@@ -245,6 +330,29 @@ export default async function MyPage() {
         <Link href="/practices" className="text-xs text-brand-600 underline">
           練習記録一覧へ →
         </Link>
+      </Card>
+
+      {/* もらったFB(練習後ピアフィードバック) */}
+      <Card className="space-y-2">
+        <h2 className="text-sm font-semibold text-slate-600">🤝 もらったFB</h2>
+        {receivedFbs.length === 0 ? (
+          <p className="text-sm text-slate-400">
+            練習後のひとことFBがここに届きます
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {receivedFbs.map((f) => (
+              <li key={f.id} className="rounded-lg bg-slate-50 px-3 py-2">
+                <p className="text-[11px] text-slate-500">
+                  {memberNameById.get(f.from_user_id) ?? "不明"} ・{" "}
+                  {f.created_at.slice(0, 10)}
+                </p>
+                <p className="text-sm text-slate-700">👍 {f.good}</p>
+                {f.advice && <p className="text-sm text-slate-600">💬 {f.advice}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
 
       <Card className="space-y-2">

@@ -186,6 +186,45 @@ export async function bulkUpdateMembers(formData: FormData) {
   backTo("/admin?ok=1");
 }
 
+// メンバーをチームから削除する(登録削除)。
+// 主用途は「間違って2つのメールアドレスで登録してしまった」ような
+// 重複アカウントの整理。引退・卒業は在籍状況(卒業/削除)の変更で行い、
+// この操作は本当にチームから外すときだけ使う。
+// 削除されるのは所属(membership)のみ: 本人のアカウントや、過去の
+// 記録(スタッツ・コメント等)は消えない。
+export async function removeMember(rawMembershipId: string, _formData: FormData) {
+  const { team, userId } = await requireAdmin();
+
+  const membershipId = z.string().uuid().safeParse(rawMembershipId);
+  if (!membershipId.success) backTo("/admin", "不正なリクエストです");
+
+  const supabase = await createClient();
+  const { data: target } = await supabase
+    .from("memberships")
+    .select("id, user_id, role, status")
+    .eq("id", membershipId.data)
+    .eq("team_id", team.id)
+    .maybeSingle();
+  if (!target) backTo("/admin", "対象のメンバーが見つかりません");
+
+  // 自分自身の削除は防ぐ(誤操作で管理者が誰もいなくなる事故の防止)
+  if ((target as { user_id: string }).user_id === userId) {
+    backTo("/admin", "自分自身は削除できません。先に別の管理者を任命し、その人に削除してもらってください。");
+  }
+
+  const { data, error } = await supabase
+    .from("memberships")
+    .delete()
+    .eq("id", membershipId.data)
+    .select("id");
+  if (error || !data?.length) {
+    backTo("/admin", "削除できませんでした(権限がない可能性があります)");
+  }
+
+  revalidatePath("/admin");
+  backTo("/admin?ok=1");
+}
+
 export async function addTagTemplate(formData: FormData) {
   const { team } = await requireAdmin();
 

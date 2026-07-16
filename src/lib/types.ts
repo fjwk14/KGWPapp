@@ -167,6 +167,33 @@ export interface PracticeAttendance {
   created_at: string;
 }
 
+// コンディション記録(1人1日1行)。閲覧は本人+マネージャー・管理者のみ(RLS)
+export interface ConditionLog {
+  id: string;
+  team_id: string;
+  user_id: string;
+  log_date: string; // "YYYY-MM-DD"
+  condition: number; // 1-5
+  motivation: number; // 1-5
+  sleep_hours: number | null;
+  pain_level: number; // 0-3
+  pain_note: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+// 練習後ピアフィードバック(1練習につき1人1件・チーム内公開)
+export interface PeerFeedback {
+  id: string;
+  team_id: string;
+  practice_id: string;
+  from_user_id: string;
+  to_user_id: string;
+  good: string;
+  advice: string | null;
+  created_at: string;
+}
+
 export interface TacticalReport {
   id: string;
   team_id: string;

@@ -749,4 +749,171 @@ describe.skipIf(!DATABASE_URL)("RLS統合テスト(実PostgreSQL)", () => {
       });
     });
   });
+
+  describe("コンディション記録(condition_logs)のプライバシー", () => {
+    const MANAGER = "66666666-6666-6666-6666-666666666666";
+
+    it("選手は自分のコンディションを記録できる", async () => {
+      await asUser(PLAYER, async (q) => {
+        const res = await q(
+          `insert into condition_logs (team_id, user_id, log_date, condition, motivation, sleep_hours, pain_level)
+           values ($1, $2, '2026-07-15', 4, 4, 7.5, 0) returning id`,
+          [TEAM_A, PLAYER]
+        );
+        expect(res.rowCount).toBe(1);
+      });
+    });
+
+    it("選手は他人のコンディションを記録できない(なりすまし不可)", async () => {
+      await asUser(PLAYER, async (q) => {
+        await expect(
+          q(
+            `insert into condition_logs (team_id, user_id, log_date, condition, motivation)
+             values ($1, $2, '2026-07-15', 1, 1)`,
+            [TEAM_A, CAPTAIN]
+          )
+        ).rejects.toThrow(/row-level security/);
+      });
+    });
+
+    it("閲覧は本人+マネージャー・管理者のみ(主将・他選手・部外者には見えない)", async () => {
+      // superuserで選手のログを1件用意し、可視性マトリクスを検証して片付ける
+      await db.query(`
+        insert into public.condition_logs (team_id, user_id, log_date, condition, motivation, pain_level, pain_note)
+        values ('${TEAM_A}', '${PLAYER}', '2026-07-14', 2, 3, 2, '右肩')
+        on conflict (user_id, log_date) do nothing`);
+      try {
+        const countFor = (uid: string) =>
+          asUser(uid, async (q) => {
+            const res = await q(
+              "select id from condition_logs where user_id = $1",
+              [PLAYER]
+            );
+            return res.rowCount;
+          });
+        expect(await countFor(PLAYER)).toBe(1); // 本人
+        expect(await countFor(MANAGER)).toBe(1); // マネージャー
+        expect(await countFor(ADMIN)).toBe(1); // 管理者
+        expect(await countFor(CAPTAIN)).toBe(0); // 主将でも見えない
+        expect(await countFor(STAFF)).toBe(0); // 戦術チームも見えない
+        expect(await countFor(OUTSIDER)).toBe(0); // 部外者
+      } finally {
+        await db.query(
+          `delete from public.condition_logs where user_id = '${PLAYER}' and log_date = '2026-07-14'`
+        );
+      }
+    });
+
+    it("本人でも他人のログは更新できない(0行)", async () => {
+      await db.query(`
+        insert into public.condition_logs (team_id, user_id, log_date, condition, motivation)
+        values ('${TEAM_A}', '${CAPTAIN}', '2026-07-14', 3, 3)
+        on conflict (user_id, log_date) do nothing`);
+      try {
+        await asUser(PLAYER, async (q) => {
+          const res = await q(
+            "update condition_logs set condition = 5 where user_id = $1",
+            [CAPTAIN]
+          );
+          expect(res.rowCount).toBe(0);
+        });
+      } finally {
+        await db.query(
+          `delete from public.condition_logs where user_id = '${CAPTAIN}' and log_date = '2026-07-14'`
+        );
+      }
+    });
+  });
+
+  describe("練習後ピアFB(peer_feedbacks)", () => {
+    const PRACTICE_FB = "dddddddd-0000-0000-0000-000000000001";
+
+    beforeAll(async () => {
+      await db.query(`
+        insert into public.practices (id, team_id, practice_date, status, created_by)
+        values ('${PRACTICE_FB}', '${TEAM_A}', '2026-07-14', 'done', '${ADMIN}')
+        on conflict (id) do nothing`);
+    });
+
+    it("選手は自分名義のFBを送れる", async () => {
+      await asUser(PLAYER, async (q) => {
+        const res = await q(
+          `insert into peer_feedbacks (team_id, practice_id, from_user_id, to_user_id, good)
+           values ($1, $2, $3, $4, 'カウンターの戻りが速かった') returning id`,
+          [TEAM_A, PRACTICE_FB, PLAYER, CAPTAIN]
+        );
+        expect(res.rowCount).toBe(1);
+      });
+    });
+
+    it("他人になりすましてFBを送れない", async () => {
+      await asUser(PLAYER, async (q) => {
+        await expect(
+          q(
+            `insert into peer_feedbacks (team_id, practice_id, from_user_id, to_user_id, good)
+             values ($1, $2, $3, $4, 'なりすまし')`,
+            [TEAM_A, PRACTICE_FB, CAPTAIN, PLAYER]
+          )
+        ).rejects.toThrow(/row-level security/);
+      });
+    });
+
+    it("FBはチーム内全員が読めるが、部外者には見えない", async () => {
+      await db.query(`
+        insert into public.peer_feedbacks (team_id, practice_id, from_user_id, to_user_id, good)
+        values ('${TEAM_A}', '${PRACTICE_FB}', '${CAPTAIN}', '${PLAYER}', 'ナイスセーブ')
+        on conflict (practice_id, from_user_id) do nothing`);
+      try {
+        await asUser(STAFF, async (q) => {
+          const res = await q("select id from peer_feedbacks where practice_id = $1", [PRACTICE_FB]);
+          expect(res.rowCount).toBeGreaterThan(0);
+        });
+        await asUser(OUTSIDER, async (q) => {
+          const res = await q("select id from peer_feedbacks where practice_id = $1", [PRACTICE_FB]);
+          expect(res.rowCount).toBe(0);
+        });
+      } finally {
+        await db.query(
+          `delete from public.peer_feedbacks where practice_id = '${PRACTICE_FB}'`
+        );
+      }
+    });
+  });
+
+  describe("メンバー削除とメール同期", () => {
+    it("管理者はメンバーをチームから削除できる", async () => {
+      await asUser(ADMIN, async (q) => {
+        const res = await q(
+          "delete from memberships where team_id = $1 and user_id = $2",
+          [TEAM_A, PLAYER]
+        );
+        expect(res.rowCount).toBe(1); // rollbackされるので実データは残る
+      });
+    });
+
+    it("選手はメンバーを削除できない(0行)", async () => {
+      await asUser(PLAYER, async (q) => {
+        const res = await q(
+          "delete from memberships where team_id = $1 and user_id = $2",
+          [TEAM_A, CAPTAIN]
+        );
+        expect(res.rowCount).toBe(0);
+      });
+    });
+
+    it("authのメール変更が public.users.email に同期される(0025トリガー)", async () => {
+      await db.query("begin");
+      try {
+        await db.query(
+          `update auth.users set email = 'renamed@example.com' where id = '${PLAYER}'`
+        );
+        const res = await db.query(
+          `select email from public.users where id = '${PLAYER}'`
+        );
+        expect(res.rows[0].email).toBe("renamed@example.com");
+      } finally {
+        await db.query("rollback");
+      }
+    });
+  });
 });

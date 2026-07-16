@@ -58,6 +58,9 @@ export const can = {
   recordPhysical: (r: RoleInput) => anyRole(r, ["manager", "admin"]),
   // 練習記録・出欠の記録(RLS側も同じ制限)
   recordPractice: (r: RoleInput) => anyRole(r, ["manager", "admin"]),
+  // 他メンバーのコンディション(体調・メンタル)閲覧。個人的な情報のため
+  // 本人以外はマネージャー・管理者のみ(RLS側も同じ制限)
+  viewTeamCondition: (r: RoleInput) => anyRole(r, ["manager", "admin"]),
 
   manageTeam: (r: RoleInput) => anyRole(r, ["admin"]),
   manageMembers: (r: RoleInput) => anyRole(r, ["admin"]),

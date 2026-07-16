@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { can, ROLE_LABELS } from "@/lib/permissions";
 import type { Membership, Profile, Role } from "@/lib/types";
 import { FIELD_POSITIONS } from "@/lib/constants";
-import { addMember, bulkUpdateMembers } from "./actions";
+import { addMember, bulkUpdateMembers, removeMember } from "./actions";
 import InviteCodeCard from "./invite-code-card";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -53,6 +53,9 @@ export default async function AdminPage({
           </Link>
           <Link href="/engagement" className="text-sm text-brand-600 underline">
             メンバーの視聴状況 →
+          </Link>
+          <Link href="/condition" className="text-sm text-brand-600 underline">
+            チームのコンディション →
           </Link>
         </div>
       </div>
@@ -196,6 +199,30 @@ export default async function AdminPage({
                     </Select>
                   </div>
                 </div>
+                {/* 登録削除(重複アカウントの整理用)。誤タップ防止に折りたたみ */}
+                <details>
+                  <summary
+                    className="cursor-pointer text-xs text-rose-400"
+                    data-testid={`remove-toggle-${m.id}`}
+                  >
+                    このメンバーを登録削除...
+                  </summary>
+                  <div className="mt-2 space-y-2 rounded-lg border border-rose-200 bg-rose-50 p-2">
+                    <p className="text-xs text-rose-700">
+                      チームから削除します(間違って複数アカウントで登録した場合の整理用)。
+                      本人のアカウントや過去の記録は消えません。
+                      引退・卒業は上の在籍状況の変更で行ってください。
+                    </p>
+                    <Button
+                      formAction={removeMember.bind(null, m.id)}
+                      variant="danger"
+                      className="min-h-9 w-full text-xs"
+                      data-testid={`remove-member-${m.id}`}
+                    >
+                      {m.users?.name ?? "このメンバー"} を削除する
+                    </Button>
+                  </div>
+                </details>
               </Card>
             </div>
           ))}

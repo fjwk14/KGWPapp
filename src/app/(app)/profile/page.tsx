@@ -1,7 +1,7 @@
 import { Button, Card, ErrorBanner, Input, Label } from "@/components/ui";
 import { requireMembership } from "@/lib/session";
 import { ROLE_LABELS } from "@/lib/permissions";
-import { updateProfileName } from "./actions";
+import { updateEmail, updateProfileName } from "./actions";
 
 // 自分のプロフィール(氏名)をいつでも編集できるページ
 export default async function ProfilePage({
@@ -22,9 +22,15 @@ export default async function ProfilePage({
 
       <Card className="space-y-4">
         <ErrorBanner message={error} />
-        {ok && (
+        {ok === "1" && (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
             ✓ 名前を更新しました
+          </div>
+        )}
+        {ok === "email" && (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            ✓ 確認メールを送りました。届いたメールのリンクを開くと変更が確定します
+            (新旧両方のアドレスに届く場合があります)。
           </div>
         )}
 
@@ -65,6 +71,30 @@ export default async function ProfilePage({
           </div>
           <Button type="submit" className="w-full">
             名前を保存する
+          </Button>
+        </form>
+      </Card>
+
+      <Card className="space-y-3">
+        <h2 className="text-sm font-semibold text-slate-600">メールアドレスを変更</h2>
+        <p className="text-xs text-slate-400">
+          ログインに使うメールアドレスを変更します。入力後に届く確認メールの
+          リンクを開くと変更が確定します(開くまでは今のアドレスのままです)。
+        </p>
+        <form action={updateEmail} className="space-y-2">
+          <div>
+            <Label htmlFor="new_email">新しいメールアドレス</Label>
+            <Input
+              type="email"
+              name="new_email"
+              id="new_email"
+              required
+              placeholder="new-address@example.com"
+              className="text-sm"
+            />
+          </div>
+          <Button type="submit" variant="secondary" className="w-full">
+            確認メールを送る
           </Button>
         </form>
       </Card>

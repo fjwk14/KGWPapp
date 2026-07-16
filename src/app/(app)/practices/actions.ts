@@ -212,6 +212,45 @@ export async function saveAttendance(formData: FormData) {
   backTo(`/practices/${practiceId.data}?ok=1`);
 }
 
+// 練習後ピアフィードバックを送る(1練習につき1人1件・upsertで書き直し可)。
+// 相手はアプリ側のランダムペアで提示するが、DB上は「自分以外のチームメイト」
+// なら誰宛でも有効(出欠の修正でペアが変わっても送信済みFBが無効にならない)。
+export async function submitPeerFeedback(formData: FormData) {
+  const { team, userId } = await requireMembership();
+
+  const practiceId = z.string().uuid().safeParse(formData.get("practice_id"));
+  const toUserId = z.string().uuid().safeParse(formData.get("to_user_id"));
+  if (!practiceId.success || !toUserId.success) {
+    backTo("/practices", "不正なリクエストです");
+  }
+  const back = `/practices/${practiceId.data}`;
+  if (toUserId.data === userId) backTo(back, "自分自身にはFBを送れません");
+
+  const good = String(formData.get("good") ?? "").trim().slice(0, 500);
+  if (!good) backTo(back, "「良かったところ」を入力してください");
+  const advice =
+    String(formData.get("advice") ?? "").trim().slice(0, 500) || null;
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("peer_feedbacks").upsert(
+    {
+      team_id: team.id,
+      practice_id: practiceId.data,
+      from_user_id: userId,
+      to_user_id: toUserId.data,
+      good,
+      advice,
+    },
+    { onConflict: "practice_id,from_user_id" }
+  );
+  if (error) {
+    backTo(back, `FBの送信に失敗しました: ${error.message}`);
+  }
+
+  revalidatePath(back);
+  backTo(`${back}?ok=1`);
+}
+
 export async function deletePractice(formData: FormData) {
   const { membership } = await requireMembership();
   if (!can.recordPractice(membership)) {
