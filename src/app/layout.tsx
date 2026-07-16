@@ -3,8 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "関学水球アプリ",
-  description:
-    "試合中の記録シートをスマホでリアルタイム入力。スコア・記録シートの自動集計、動画クリップ共有、AI分析までひとつにした水球部のチームアプリ。",
+  description: "試合記録から動画分析、選手評価、練習管理までをひとつに。",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
