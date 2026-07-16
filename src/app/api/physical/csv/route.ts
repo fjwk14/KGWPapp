@@ -8,7 +8,8 @@ import {
   type PhysicalRosterEntry,
 } from "@/lib/physical";
 import { buildCsv, withBom } from "@/lib/csv";
-import type { Profile } from "@/lib/types";
+import { isManager } from "@/lib/permissions";
+import type { Profile, Role } from "@/lib/types";
 
 // フィジカル測定値(最新値+総合スコア)をCSVでダウンロードするAPI
 export async function GET() {
@@ -18,7 +19,7 @@ export async function GET() {
   const [{ data: membersData }, { data: rowsData }] = await Promise.all([
     supabase
       .from("memberships")
-      .select("user_id, cap_number, is_gk, field_position, users(name)")
+      .select("user_id, cap_number, is_gk, field_position, role, secondary_role, users(name)")
       .eq("team_id", team.id)
       .eq("status", "active")
       .order("cap_number"),
@@ -28,21 +29,26 @@ export async function GET() {
       .eq("team_id", team.id),
   ]);
 
+  // マネージャーは競技者ではないためフィジカルCSVの対象外
   const roster: PhysicalRosterEntry[] = (
     (membersData ?? []) as unknown as {
       user_id: string;
       cap_number: number | null;
       is_gk: boolean;
       field_position: number | null;
+      role: Role;
+      secondary_role: Role | null;
       users: Pick<Profile, "name"> | null;
     }[]
-  ).map((m) => ({
-    user_id: m.user_id,
-    name: m.users?.name ?? "不明",
-    cap_number: m.cap_number ?? 99,
-    is_gk: m.is_gk,
-    field_position: m.field_position,
-  }));
+  )
+    .filter((m) => !isManager(m))
+    .map((m) => ({
+      user_id: m.user_id,
+      name: m.users?.name ?? "不明",
+      cap_number: m.cap_number ?? 99,
+      is_gk: m.is_gk,
+      field_position: m.field_position,
+    }));
 
   const rows: PhysicalMeasurementRow[] = ((rowsData ?? []) as PhysicalMeasurementRow[]).map(
     (r) => ({ ...r, value: Number(r.value) })

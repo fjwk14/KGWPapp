@@ -6,12 +6,13 @@ import {
   ErrorBanner,
   Input,
   Label,
+  RoleBadge,
   Select,
   Textarea,
 } from "@/components/ui";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { can } from "@/lib/permissions";
+import { can, isManager } from "@/lib/permissions";
 import {
   ATTENDANCE_LABELS,
   ATTENDANCE_STYLES,
@@ -25,6 +26,7 @@ import type {
   Practice,
   PracticeAttendance,
   Profile,
+  Role,
 } from "@/lib/types";
 import ConditionForm from "../../condition/condition-form";
 import {
@@ -68,7 +70,7 @@ export default async function PracticeDetailPage({
       .maybeSingle(),
     supabase
       .from("memberships")
-      .select("user_id, cap_number, users(name)")
+      .select("user_id, cap_number, role, secondary_role, users(name)")
       .eq("team_id", team.id)
       .eq("status", "active")
       .order("cap_number"),
@@ -108,12 +110,15 @@ export default async function PracticeDetailPage({
     (membersData ?? []) as unknown as {
       user_id: string;
       cap_number: number | null;
+      role: Role;
+      secondary_role: Role | null;
       users: Pick<Profile, "name"> | null;
     }[]
   ).map((m) => ({
     user_id: m.user_id,
     cap_number: m.cap_number,
     name: m.users?.name ?? "不明",
+    manager: isManager(m),
   }));
 
   const statusByUser = new Map(
@@ -451,6 +456,7 @@ export default async function PracticeDetailPage({
             const cur = statusByUser.get(m.user_id) ?? "present";
             return (
               <Card key={m.user_id} className="flex items-center gap-2 p-2">
+                <RoleBadge manager={m.manager} />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">
                   {m.cap_number ? `#${m.cap_number} ` : ""}
                   {m.name}
@@ -486,6 +492,7 @@ export default async function PracticeDetailPage({
             const cur = statusByUser.get(m.user_id);
             return (
               <Card key={m.user_id} className="flex items-center gap-2 p-2">
+                <RoleBadge manager={m.manager} />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">
                   {m.cap_number ? `#${m.cap_number} ` : ""}
                   {m.name}

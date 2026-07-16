@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { can } from "@/lib/permissions";
-import type { Match, Profile } from "@/lib/types";
+import { can, isManager } from "@/lib/permissions";
+import type { Match, Profile, Role } from "@/lib/types";
 import type { RosterEntry, StatsEvent } from "@/lib/stats";
 import LiveScreen from "./live-screen";
 
@@ -32,7 +32,7 @@ export default async function LiveStatsPage({
     await Promise.all([
       supabase
         .from("memberships")
-        .select("user_id, cap_number, is_gk, users(name)")
+        .select("user_id, cap_number, is_gk, role, secondary_role, users(name)")
         .eq("team_id", team.id)
         .eq("status", "active"),
       supabase
@@ -47,12 +47,17 @@ export default async function LiveStatsPage({
         .order("created_at"),
     ]);
 
-  const memberRows = (membersData ?? []) as unknown as {
-    user_id: string;
-    cap_number: number | null;
-    is_gk: boolean;
-    users: Pick<Profile, "name"> | null;
-  }[];
+  // マネージャーは競技者ではないため出場メンバー候補から除外する
+  const memberRows = (
+    (membersData ?? []) as unknown as {
+      user_id: string;
+      cap_number: number | null;
+      is_gk: boolean;
+      role: Role;
+      secondary_role: Role | null;
+      users: Pick<Profile, "name"> | null;
+    }[]
+  ).filter((m) => !isManager(m));
   const members = memberRows.map((m) => ({
     user_id: m.user_id,
     name: m.users?.name ?? "不明",

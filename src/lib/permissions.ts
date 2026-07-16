@@ -67,6 +67,10 @@ export const can = {
   manageTagTemplates: (r: RoleInput) => anyRole(r, ["admin"]),
 } as const;
 
+// マネージャー役職(primary/secondary問わず)を持つメンバーは競技者ではない。
+// 帽子番号・ポジション・フィジカル/プレー評価・出場メンバー候補から除外する。
+export const isManager = (r: RoleInput) => anyRole(r, ["manager"]);
+
 export const ROLE_LABELS: Record<Role, string> = {
   player: "選手",
   manager: "マネージャー",

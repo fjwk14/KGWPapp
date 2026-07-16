@@ -136,6 +136,27 @@ export function TagBadge({
   );
 }
 
+// 選手 / マネージャーを一目で区別するバッジ
+export function RoleBadge({
+  manager,
+  className,
+}: {
+  manager: boolean;
+  className?: string;
+}) {
+  return (
+    <span
+      className={clsx(
+        "inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none",
+        manager ? "bg-pink-100 text-pink-700" : "bg-sky-100 text-sky-700",
+        className
+      )}
+    >
+      {manager ? "📋 マネ" : "🏊 選手"}
+    </span>
+  );
+}
+
 export function ErrorBanner({ message }: { message?: string | null }) {
   if (!message) return null;
   return (

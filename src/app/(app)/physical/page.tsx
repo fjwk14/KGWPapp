@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Button, Card, ErrorBanner, Input, Label, Select } from "@/components/ui";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { can } from "@/lib/permissions";
+import { can, isManager } from "@/lib/permissions";
+import type { Role } from "@/lib/types";
 import {
   PHYSICAL_METRICS,
   PHYSICAL_METRIC_MAP,
@@ -32,7 +33,7 @@ export default async function PhysicalPage({
   const [{ data: membersData }, { data: rowsData }] = await Promise.all([
     supabase
       .from("memberships")
-      .select("user_id, cap_number, is_gk, field_position, users(name)")
+      .select("user_id, cap_number, is_gk, field_position, role, secondary_role, users(name)")
       .eq("team_id", team.id)
       .eq("status", "active")
       .order("cap_number"),
@@ -42,21 +43,26 @@ export default async function PhysicalPage({
       .eq("team_id", team.id),
   ]);
 
+  // マネージャーは競技者ではないためフィジカル測定・ランキングの対象外
   const roster: PhysicalRosterEntry[] = (
     (membersData ?? []) as unknown as {
       user_id: string;
       cap_number: number | null;
       is_gk: boolean;
       field_position: number | null;
+      role: Role;
+      secondary_role: Role | null;
       users: Pick<Profile, "name"> | null;
     }[]
-  ).map((m) => ({
-    user_id: m.user_id,
-    name: m.users?.name ?? "不明",
-    cap_number: m.cap_number ?? 99,
-    is_gk: m.is_gk,
-    field_position: m.field_position,
-  }));
+  )
+    .filter((m) => !isManager(m))
+    .map((m) => ({
+      user_id: m.user_id,
+      name: m.users?.name ?? "不明",
+      cap_number: m.cap_number ?? 99,
+      is_gk: m.is_gk,
+      field_position: m.field_position,
+    }));
 
   // numeric列はPostgREST/supabase-jsが文字列で返すため、ここで数値に正規化する
   const rows: PhysicalMeasurementRow[] = ((rowsData ?? []) as PhysicalMeasurementRow[]).map(

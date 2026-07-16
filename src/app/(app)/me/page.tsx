@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Card, LinkButton } from "@/components/ui";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { ROLE_LABELS } from "@/lib/permissions";
+import { isManager, ROLE_LABELS } from "@/lib/permissions";
 import { positionLabel, ATTENDANCE_LABELS } from "@/lib/constants";
 import {
   buildPhysicalProfiles,
@@ -258,37 +258,40 @@ export default async function MyPage({
         </details>
       </Card>
 
-      <Card className="space-y-3">
-        <h2 className="text-sm font-semibold text-slate-600">フィジカル・プレー評価</h2>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg bg-brand-50 p-3 text-center">
-            <div className="text-2xl font-bold text-brand-700">
-              {myPhysical?.overallPhysicalScore ?? "-"}
+      {/* フィジカル・プレー評価はマネージャー(非競技者)には表示しない */}
+      {!isManager(membership) && (
+        <Card className="space-y-3">
+          <h2 className="text-sm font-semibold text-slate-600">フィジカル・プレー評価</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-lg bg-brand-50 p-3 text-center">
+              <div className="text-2xl font-bold text-brand-700">
+                {myPhysical?.overallPhysicalScore ?? "-"}
+              </div>
+              <div className="text-xs text-slate-500">総合フィジカルスコア</div>
             </div>
-            <div className="text-xs text-slate-500">総合フィジカルスコア</div>
+            <div className="rounded-lg bg-emerald-50 p-3 text-center">
+              {myGk ? (
+                <>
+                  <div className="text-2xl font-bold text-emerald-700">
+                    {myGk.saveRate == null ? "-" : `${Math.round(myGk.saveRate * 100)}%`}
+                  </div>
+                  <div className="text-xs text-slate-500">セーブ率(GK)</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-emerald-700">
+                    {myPerformance?.overallPerformance ?? "-"}
+                  </div>
+                  <div className="text-xs text-slate-500">総合プレースコア</div>
+                </>
+              )}
+            </div>
           </div>
-          <div className="rounded-lg bg-emerald-50 p-3 text-center">
-            {myGk ? (
-              <>
-                <div className="text-2xl font-bold text-emerald-700">
-                  {myGk.saveRate == null ? "-" : `${Math.round(myGk.saveRate * 100)}%`}
-                </div>
-                <div className="text-xs text-slate-500">セーブ率(GK)</div>
-              </>
-            ) : (
-              <>
-                <div className="text-2xl font-bold text-emerald-700">
-                  {myPerformance?.overallPerformance ?? "-"}
-                </div>
-                <div className="text-xs text-slate-500">総合プレースコア</div>
-              </>
-            )}
-          </div>
-        </div>
-        <LinkButton href={`/physical/${userId}`} className="w-full">
-          軸別のレーダーを詳しく見る →
-        </LinkButton>
-      </Card>
+          <LinkButton href={`/physical/${userId}`} className="w-full">
+            軸別のレーダーを詳しく見る →
+          </LinkButton>
+        </Card>
+      )}
 
       <Card className="space-y-2">
         <h2 className="text-sm font-semibold text-slate-600">練習出席率</h2>

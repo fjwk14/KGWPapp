@@ -6,11 +6,12 @@ import {
   ErrorBanner,
   Input,
   Label,
+  RoleBadge,
   Select,
 } from "@/components/ui";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { can, ROLE_LABELS } from "@/lib/permissions";
+import { can, isManager, ROLE_LABELS } from "@/lib/permissions";
 import type { Membership, Profile, Role } from "@/lib/types";
 import { FIELD_POSITIONS } from "@/lib/constants";
 import { addMember, bulkUpdateMembers, removeMember } from "./actions";
@@ -118,9 +119,14 @@ export default async function AdminPage({
           {members.map((m) => (
             <div key={m.id}>
               <Card className="space-y-2">
-                <div>
-                  <span className="font-semibold">{m.users?.name ?? "不明"}</span>
-                  <span className="ml-2 text-xs text-slate-400">{m.users?.email}</span>
+                <div className="flex items-center gap-1.5">
+                  <RoleBadge manager={isManager(m)} />
+                  <span className="min-w-0 truncate font-semibold">
+                    {m.users?.name ?? "不明"}
+                  </span>
+                  <span className="min-w-0 truncate text-xs text-slate-400">
+                    {m.users?.email}
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <Select
@@ -166,39 +172,46 @@ export default async function AdminPage({
                     )}
                   </Select>
                 </div>
-                {/* 既定の帽子番号・ポジション(試合記録の初期値になる) */}
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <label className="text-xs text-slate-400">帽子番号</label>
-                    <Input
-                      name={`cap_number_${m.id}`}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={2}
-                      defaultValue={m.cap_number ?? ""}
-                      placeholder="未設定"
-                      className="text-sm"
-                    />
+                {/* 既定の帽子番号・ポジション(試合記録の初期値になる)。
+                    マネージャーは競技者ではないため設定不要 */}
+                {isManager(m) ? (
+                  <p className="text-xs text-slate-400">
+                    マネージャーは帽子番号・ポジションの設定は不要です。
+                  </p>
+                ) : (
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <label className="text-xs text-slate-400">帽子番号</label>
+                      <Input
+                        name={`cap_number_${m.id}`}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={2}
+                        defaultValue={m.cap_number ?? ""}
+                        placeholder="未設定"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs text-slate-400">ポジション</label>
+                      <Select
+                        name={`position_${m.id}`}
+                        defaultValue={
+                          m.is_gk ? "gk" : m.field_position ? String(m.field_position) : ""
+                        }
+                        className="w-full text-sm"
+                      >
+                        <option value="">未設定</option>
+                        {FIELD_POSITIONS.map((p) => (
+                          <option key={p.value} value={String(p.value)}>
+                            {p.label}
+                          </option>
+                        ))}
+                        <option value="gk">GK</option>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <label className="text-xs text-slate-400">ポジション</label>
-                    <Select
-                      name={`position_${m.id}`}
-                      defaultValue={
-                        m.is_gk ? "gk" : m.field_position ? String(m.field_position) : ""
-                      }
-                      className="w-full text-sm"
-                    >
-                      <option value="">未設定</option>
-                      {FIELD_POSITIONS.map((p) => (
-                        <option key={p.value} value={String(p.value)}>
-                          {p.label}
-                        </option>
-                      ))}
-                      <option value="gk">GK</option>
-                    </Select>
-                  </div>
-                </div>
+                )}
                 {/* 登録削除(重複アカウントの整理用)。誤タップ防止に折りたたみ */}
                 <details>
                   <summary

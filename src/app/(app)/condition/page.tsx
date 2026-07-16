@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Card } from "@/components/ui";
+import { Card, RoleBadge } from "@/components/ui";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { can } from "@/lib/permissions";
+import { can, isManager } from "@/lib/permissions";
 import {
   todayJST,
   CONDITION_LABELS,
   PAIN_LABELS,
   type ConditionLogEntry,
 } from "@/lib/condition";
-import type { ConditionLog, Profile } from "@/lib/types";
+import type { ConditionLog, Profile, Role } from "@/lib/types";
 
 // スタッフ(マネージャー・管理者)向け: チーム全員のコンディション一覧。
 // 「今日誰が痛みを抱えているか」「調子を落としている部員はいないか」を
@@ -23,7 +23,7 @@ export default async function ConditionTeamPage() {
   const [{ data: membersData }, { data: logsData }] = await Promise.all([
     supabase
       .from("memberships")
-      .select("user_id, cap_number, users(name)")
+      .select("user_id, cap_number, role, secondary_role, users(name)")
       .eq("team_id", team.id)
       .eq("status", "active")
       .order("cap_number"),
@@ -39,12 +39,15 @@ export default async function ConditionTeamPage() {
     (membersData ?? []) as unknown as {
       user_id: string;
       cap_number: number | null;
+      role: Role;
+      secondary_role: Role | null;
       users: Pick<Profile, "name"> | null;
     }[]
   ).map((m) => ({
     user_id: m.user_id,
     cap_number: m.cap_number,
     name: m.users?.name ?? "不明",
+    manager: isManager(m),
   }));
 
   const logs = ((logsData ?? []) as (ConditionLog & { user_id: string })[]).map(
@@ -128,9 +131,12 @@ export default async function ConditionTeamPage() {
               href={`/condition/${m.user_id}`}
               className="flex items-center justify-between gap-2 border-t border-slate-100 py-1.5 text-sm first:border-t-0"
             >
-              <span className="min-w-0 truncate font-medium text-brand-700">
-                {m.cap_number ? `#${m.cap_number} ` : ""}
-                {m.name}
+              <span className="flex min-w-0 items-center gap-1.5">
+                <RoleBadge manager={m.manager} />
+                <span className="min-w-0 truncate font-medium text-brand-700">
+                  {m.cap_number ? `#${m.cap_number} ` : ""}
+                  {m.name}
+                </span>
               </span>
               {l ? (
                 <span className="shrink-0 text-xs text-slate-500">
