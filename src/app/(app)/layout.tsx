@@ -62,10 +62,12 @@ export default async function AppLayout({
 }) {
   const { team, profile, membership, userId } = await requireMembership();
 
+  // アプリアイコン(水球帽のシャチ・ゴールドの球)のモチーフに合わせた
+  // 統一感のあるアイコンセット。試合=ゴール、練習=水球プレーヤー。
   const navItems = [
     { href: "/dashboard", label: "ホーム", icon: "🏠" },
-    { href: "/matches", label: "試合", icon: "🎬", showUnreadBadge: true },
-    { href: "/practices", label: "練習", icon: "🏊" },
+    { href: "/matches", label: "試合", icon: "🥅", showUnreadBadge: true },
+    { href: "/practices", label: "練習", icon: "🤽‍♂️" },
     { href: "/rankings", label: "ランキング", icon: "🏆" },
     ...(can.manageTeam(membership)
       ? [{ href: "/admin", label: "設定", icon: "⚙️" }]

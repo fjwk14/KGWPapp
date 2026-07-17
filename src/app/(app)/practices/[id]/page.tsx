@@ -220,28 +220,24 @@ export default async function PracticeDetailPage({
                   className="appearance-none text-sm"
                 />
               </div>
-              <div className="w-24 shrink-0">
+              <div className="w-28 shrink-0">
                 <Label htmlFor="start_time">開始</Label>
                 <Input
-                  type="text"
+                  type="time"
                   name="start_time"
                   id="start_time"
-                  inputMode="numeric"
                   defaultValue={practice.start_time ?? ""}
-                  placeholder="19:00"
-                  className="text-sm"
+                  className="appearance-none text-sm"
                 />
               </div>
-              <div className="w-24 shrink-0">
+              <div className="w-28 shrink-0">
                 <Label htmlFor="end_time">終了</Label>
                 <Input
-                  type="text"
+                  type="time"
                   name="end_time"
                   id="end_time"
-                  inputMode="numeric"
                   defaultValue={practice.end_time ?? ""}
-                  placeholder="21:00"
-                  className="text-sm"
+                  className="appearance-none text-sm"
                 />
               </div>
             </div>

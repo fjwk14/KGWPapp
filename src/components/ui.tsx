@@ -153,7 +153,7 @@ export function RoleBadge({
         className
       )}
     >
-      {manager ? "📋 マネ" : "🏊 選手"}
+      {manager ? "📋 マネ" : "🤽‍♂️ 選手"}
     </span>
   );
 }

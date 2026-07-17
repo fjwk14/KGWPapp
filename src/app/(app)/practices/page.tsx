@@ -63,7 +63,7 @@ export default async function PracticesPage({
   return (
     <>
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold">🏊 練習記録・出欠</h1>
+        <h1 className="text-lg font-bold">🤽‍♂️ 練習記録・出欠</h1>
         {can.viewTeamCondition(membership) && (
           <Link href="/condition" className="shrink-0 text-sm text-brand-600 underline">
             🩺 コンディション →
@@ -91,26 +91,22 @@ export default async function PracticesPage({
                   className="appearance-none text-sm"
                 />
               </div>
-              <div className="w-24 shrink-0">
+              <div className="w-28 shrink-0">
                 <Label htmlFor="start_time">開始</Label>
                 <Input
-                  type="text"
+                  type="time"
                   name="start_time"
                   id="start_time"
-                  inputMode="numeric"
-                  placeholder="19:00"
-                  className="text-sm"
+                  className="appearance-none text-sm"
                 />
               </div>
-              <div className="w-24 shrink-0">
+              <div className="w-28 shrink-0">
                 <Label htmlFor="end_time">終了</Label>
                 <Input
-                  type="text"
+                  type="time"
                   name="end_time"
                   id="end_time"
-                  inputMode="numeric"
-                  placeholder="21:00"
-                  className="text-sm"
+                  className="appearance-none text-sm"
                 />
               </div>
             </div>
