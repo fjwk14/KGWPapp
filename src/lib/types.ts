@@ -44,6 +44,7 @@ export interface Membership {
   cap_number: number | null;
   is_gk: boolean;
   field_position: number | null;
+  secondary_field_position: number | null;
   enrollment_year: number | null;
 }
 
@@ -260,6 +261,7 @@ export interface SelfPractice {
   practice_date: string; // "YYYY-MM-DD"
   category: SelfPracticeCategory;
   menu: string | null;
+  location: string | null;
   created_at: string;
 }
 

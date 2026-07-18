@@ -51,13 +51,13 @@ export default async function MyPage({
   ] = await Promise.all([
     supabase
       .from("memberships")
-      .select("field_position")
+      .select("field_position, secondary_field_position")
       .eq("team_id", team.id)
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
       .from("memberships")
-      .select("user_id, cap_number, is_gk, field_position, users(name)")
+      .select("user_id, cap_number, is_gk, field_position, secondary_field_position, users(name)")
       .eq("team_id", team.id)
       .eq("status", "active"),
     supabase
@@ -96,9 +96,13 @@ export default async function MyPage({
       .limit(5),
   ]);
 
-  const fieldPosition = (myMembershipData as { field_position: number | null } | null)
-    ?.field_position ?? null;
-  const positionText = positionLabel(membership.is_gk, fieldPosition);
+  const myPositionData = myMembershipData as {
+    field_position: number | null;
+    secondary_field_position: number | null;
+  } | null;
+  const fieldPosition = myPositionData?.field_position ?? null;
+  const secondaryFieldPosition = myPositionData?.secondary_field_position ?? null;
+  const positionText = positionLabel(membership.is_gk, fieldPosition, secondaryFieldPosition);
   const roles = [membership.role, membership.secondary_role]
     .filter((r): r is NonNullable<typeof r> => Boolean(r))
     .map((r) => ROLE_LABELS[r]);

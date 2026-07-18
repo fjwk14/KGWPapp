@@ -92,11 +92,18 @@ export const QA_CATEGORY_LABELS: Record<string, string> = {
   other: "その他",
 };
 
-// メンバーのポジション表示(GK優先、次に field_position)
-export function positionLabel(isGk: boolean, fieldPosition: number | null): string {
+// メンバーのポジション表示(GK優先、次に field_position。併用ポジションは"/"で併記)
+export function positionLabel(
+  isGk: boolean,
+  fieldPosition: number | null,
+  secondaryFieldPosition?: number | null
+): string {
   if (isGk) return "GK";
-  if (fieldPosition && POSITION_LABELS[String(fieldPosition)]) {
-    return POSITION_LABELS[String(fieldPosition)];
-  }
-  return "未設定";
+  if (!fieldPosition || !POSITION_LABELS[String(fieldPosition)]) return "未設定";
+  const primary = POSITION_LABELS[String(fieldPosition)];
+  const secondary =
+    secondaryFieldPosition && POSITION_LABELS[String(secondaryFieldPosition)]
+      ? POSITION_LABELS[String(secondaryFieldPosition)]
+      : null;
+  return secondary ? `${primary} / ${secondary}` : primary;
 }

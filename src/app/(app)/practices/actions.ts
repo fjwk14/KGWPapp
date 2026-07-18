@@ -294,7 +294,8 @@ export async function logSelfPractice(formData: FormData) {
     user_id: userId,
     practice_date: practiceDate,
     category: category.data,
-    menu: cleanText(formData.get("menu"), 500),
+    menu: cleanText(formData.get("menu"), 2000),
+    location: cleanText(formData.get("location"), 200),
   });
   if (error) backTo("/practices", `自主練の記録に失敗しました: ${error.message}`);
 

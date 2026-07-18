@@ -91,6 +91,7 @@ interface ParsedMemberUpdate {
   capNumber: number | null;
   isGk: boolean;
   fieldPosition: number | null;
+  secondaryFieldPosition: number | null;
   enrollmentYear: number | null;
 }
 
@@ -137,6 +138,15 @@ export async function bulkUpdateMembers(formData: FormData) {
       const p = Number(rawPos);
       if (Number.isInteger(p) && p >= 1 && p <= 6) fieldPosition = p;
     }
+    // 併用ポジション(任意)。GK・primaryと同じ値は弾く(secondary_roleと同じ考え方)
+    const rawSecPos = String(formData.get(`secondary_position_${membershipId}`) ?? "").trim();
+    let secondaryFieldPosition: number | null = null;
+    if (!isGk && rawSecPos !== "") {
+      const sp = Number(rawSecPos);
+      if (Number.isInteger(sp) && sp >= 1 && sp <= 6 && sp !== fieldPosition) {
+        secondaryFieldPosition = sp;
+      }
+    }
 
     // 入部年度(学年の算出に使う)。空欄はnull。妥当な西暦のみ受け付ける
     const rawYear = String(formData.get(`enrollment_year_${membershipId}`) ?? "").trim();
@@ -154,6 +164,7 @@ export async function bulkUpdateMembers(formData: FormData) {
       capNumber,
       isGk,
       fieldPosition,
+      secondaryFieldPosition,
       enrollmentYear,
     });
   }
@@ -205,6 +216,7 @@ export async function bulkUpdateMembers(formData: FormData) {
         cap_number: u.capNumber,
         is_gk: u.isGk,
         field_position: u.fieldPosition,
+        secondary_field_position: u.secondaryFieldPosition,
         enrollment_year: u.enrollmentYear,
       })
       .eq("id", u.membershipId)

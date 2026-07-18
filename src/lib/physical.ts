@@ -78,6 +78,7 @@ export interface PhysicalRosterEntry {
   cap_number: number;
   is_gk: boolean;
   field_position: number | null;
+  secondary_field_position?: number | null;
 }
 
 // ---------- 偏差値(T得点) ----------

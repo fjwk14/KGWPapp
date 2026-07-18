@@ -262,6 +262,28 @@ export default async function AdminPage({
                     </div>
                   </div>
                 )}
+                {/* ポジションの併用(任意)。複数ポジションをこなす選手向け */}
+                {!isManager(m) && (
+                  <div>
+                    <label className="text-xs text-slate-400">
+                      併用ポジション(任意)
+                    </label>
+                    <Select
+                      name={`secondary_position_${m.id}`}
+                      defaultValue={
+                        m.secondary_field_position ? String(m.secondary_field_position) : ""
+                      }
+                      className="w-full text-sm"
+                    >
+                      <option value="">なし</option>
+                      {FIELD_POSITIONS.map((p) => (
+                        <option key={p.value} value={String(p.value)}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
                 {/* 登録削除(重複アカウントの整理用)。誤タップ防止に折りたたみ */}
                 <details>
                   <summary

@@ -47,7 +47,7 @@ export default async function PhysicalDetailPage({
     await Promise.all([
       supabase
         .from("memberships")
-        .select("user_id, cap_number, is_gk, field_position, users(name)")
+        .select("user_id, cap_number, is_gk, field_position, secondary_field_position, users(name)")
         .eq("team_id", team.id)
         .eq("status", "active")
         .order("cap_number"),
@@ -71,6 +71,7 @@ export default async function PhysicalDetailPage({
       cap_number: number | null;
       is_gk: boolean;
       field_position: number | null;
+      secondary_field_position: number | null;
       users: Pick<Profile, "name"> | null;
     }[]
   ).map((m) => ({
@@ -79,6 +80,7 @@ export default async function PhysicalDetailPage({
     cap_number: m.cap_number ?? 99,
     is_gk: m.is_gk,
     field_position: m.field_position,
+    secondary_field_position: m.secondary_field_position,
   }));
 
   const target = roster.find((r) => r.user_id === userId);
@@ -128,7 +130,11 @@ export default async function PhysicalDetailPage({
         .filter((h) => h.match)
         .sort((a, b) => (a.match!.match_date ?? "").localeCompare(b.match!.match_date ?? ""));
 
-  const positionText = positionLabel(target.is_gk, target.field_position);
+  const positionText = positionLabel(
+    target.is_gk,
+    target.field_position,
+    target.secondary_field_position
+  );
 
   return (
     <>

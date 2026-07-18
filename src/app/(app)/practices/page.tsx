@@ -39,7 +39,7 @@ export default async function PracticesPage({
         .eq("team_id", team.id),
       supabase
         .from("self_practices")
-        .select("id, user_id, practice_date, category, menu, created_at, users(name)")
+        .select("id, user_id, practice_date, category, menu, location, created_at, users(name)")
         .eq("team_id", team.id)
         .order("created_at", { ascending: false })
         .limit(30),
@@ -73,7 +73,7 @@ export default async function PracticesPage({
   const selfPractices = (
     (selfData ?? []) as unknown as (Pick<
       SelfPractice,
-      "id" | "user_id" | "practice_date" | "category" | "menu" | "created_at"
+      "id" | "user_id" | "practice_date" | "category" | "menu" | "location" | "created_at"
     > & { users: Pick<Profile, "name"> | null })[]
   ).map((s) => ({ ...s, name: s.users?.name ?? "不明" }));
 
@@ -100,40 +100,54 @@ export default async function PracticesPage({
         <p className="text-xs text-slate-400">
           水中練習・ウエイトなど、個人でやった練習を記録できます。記録するとポイントが貯まります。
         </p>
-        <form action={logSelfPractice} className="flex flex-wrap gap-2">
-          <div className="w-36 shrink-0">
-            <Label htmlFor="self_practice_date" className="sr-only">
-              日付
-            </Label>
-            <Input
-              type="date"
-              name="practice_date"
-              id="self_practice_date"
-              defaultValue={today}
-              className="appearance-none text-sm"
-            />
+        <form action={logSelfPractice} className="space-y-2">
+          <div className="flex gap-2">
+            <div className="w-32 shrink-0">
+              <Label htmlFor="self_practice_date" className="sr-only">
+                日付
+              </Label>
+              <Input
+                type="date"
+                name="practice_date"
+                id="self_practice_date"
+                defaultValue={today}
+                className="appearance-none text-sm"
+              />
+            </div>
+            <div className="w-24 shrink-0">
+              <Label htmlFor="self_practice_category" className="sr-only">
+                種別
+              </Label>
+              <Select name="category" id="self_practice_category" defaultValue="swim" className="text-sm">
+                {Object.entries(SELF_PRACTICE_CATEGORY_LABELS).map(([v, l]) => (
+                  <option key={v} value={v}>
+                    {l}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="min-w-0 flex-1">
+              <Label htmlFor="self_practice_location" className="sr-only">
+                場所(任意)
+              </Label>
+              <Input
+                type="text"
+                name="location"
+                id="self_practice_location"
+                placeholder="場所(任意・例: 市民プール)"
+                className="text-sm"
+              />
+            </div>
           </div>
-          <div className="w-28 shrink-0">
-            <Label htmlFor="self_practice_category" className="sr-only">
-              種別
-            </Label>
-            <Select name="category" id="self_practice_category" defaultValue="swim" className="text-sm">
-              {Object.entries(SELF_PRACTICE_CATEGORY_LABELS).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="min-w-0 flex-1">
+          <div>
             <Label htmlFor="self_practice_menu" className="sr-only">
-              内容(任意)
+              メニュー(任意)
             </Label>
-            <Input
-              type="text"
+            <Textarea
               name="menu"
               id="self_practice_menu"
-              placeholder="内容(任意・例: スクワット3セット)"
+              rows={3}
+              placeholder={"メニュー(任意・複数行OK)\n例: スクワット3セット\nベンチプレス3セット"}
               className="text-sm"
             />
           </div>
@@ -155,6 +169,7 @@ export default async function PracticesPage({
                     </span>
                     <span className="font-semibold text-slate-700">{s.name}</span>
                     <span className="ml-1 text-slate-400">{s.practice_date.slice(5)}</span>
+                    {s.location && <span className="ml-1 text-slate-400">@{s.location}</span>}
                     {s.menu && <span className="ml-1 text-slate-500">{s.menu}</span>}
                   </span>
                   {s.user_id === userId && (
@@ -174,14 +189,14 @@ export default async function PracticesPage({
 
       {canRecord && (
         <Card className="space-y-3">
-          <h2 className="text-sm font-semibold text-slate-600">練習を作る</h2>
+          <h2 className="text-sm font-semibold text-slate-600">練習作成</h2>
           <p className="text-xs text-slate-400">
             先に「予定」として作っておくと、部員が各自出欠を申告できます。
             当日その場で記録する場合はそのまま「記録して出欠へ」でOKです。
           </p>
           <form action={createPractice} className="space-y-3">
             <div className="flex gap-2">
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-[3]">
                 <Label htmlFor="practice_date">日付</Label>
                 <Input
                   type="date"
@@ -191,7 +206,7 @@ export default async function PracticesPage({
                   className="appearance-none text-sm"
                 />
               </div>
-              <div className="w-28 shrink-0">
+              <div className="min-w-0 flex-[2]">
                 <Label htmlFor="start_time">開始</Label>
                 <Input
                   type="time"
@@ -200,7 +215,7 @@ export default async function PracticesPage({
                   className="appearance-none text-sm"
                 />
               </div>
-              <div className="w-28 shrink-0">
+              <div className="min-w-0 flex-[2]">
                 <Label htmlFor="end_time">終了</Label>
                 <Input
                   type="time"
