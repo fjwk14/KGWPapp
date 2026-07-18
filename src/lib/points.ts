@@ -38,7 +38,7 @@ export const POINT_RULE_LABELS: { label: string; value: string }[] = [
   { label: "提案が採用される", value: "+30 / 件" },
   { label: "Q&Aで回答", value: "+3 / 回" },
   { label: "ベストアンサーに選ばれる", value: "+10 / 回" },
-  { label: "特別功労(幹部が理由付きで付与)", value: "都度1〜200" },
+  { label: "特別功労(幹部が理由付きで付与)", value: "都度1〜50" },
 ];
 
 // ---------- レベル(累積・下がらない) ----------

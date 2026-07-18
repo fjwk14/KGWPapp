@@ -20,11 +20,11 @@ export async function grantPoints(formData: FormData) {
   }
 
   const targetUserId = z.string().uuid().safeParse(formData.get("user_id"));
-  const points = z.coerce.number().int().min(1).max(200).safeParse(formData.get("points"));
+  const points = z.coerce.number().int().min(1).max(50).safeParse(formData.get("points"));
   const reason = String(formData.get("reason") ?? "").trim();
 
   if (!targetUserId.success) backTo("/points", "対象メンバーを選んでください");
-  if (!points.success) backTo("/points", "ポイントは1〜200で入力してください");
+  if (!points.success) backTo("/points", "ポイントは1〜50で入力してください");
   if (!reason) backTo("/points", "理由を入力してください");
 
   const supabase = await createClient();

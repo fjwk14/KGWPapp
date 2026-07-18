@@ -1074,12 +1074,12 @@ describe.skipIf(!DATABASE_URL)("RLS統合テスト(実PostgreSQL)", () => {
       });
     });
 
-    it("ポイントは1〜200の範囲外だとDB制約で弾かれる", async () => {
+    it("ポイントは1〜50の範囲外だとDB制約で弾かれる", async () => {
       await asUser(CAPTAIN, async (q) => {
         await expect(
           q(
             `insert into point_grants (team_id, user_id, granted_by, points, reason)
-             values ($1, $2, $3, 500, '範囲外')`,
+             values ($1, $2, $3, 100, '範囲外')`,
             [TEAM_A, PLAYER, CAPTAIN]
           )
         ).rejects.toThrow();

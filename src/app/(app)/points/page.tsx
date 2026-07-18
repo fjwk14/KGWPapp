@@ -206,7 +206,7 @@ export default async function PointsPage({
                   name="points"
                   id="grant_points"
                   min={1}
-                  max={200}
+                  max={50}
                   defaultValue={10}
                   required
                   className="text-sm tabular-nums"
