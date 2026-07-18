@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button, Card, ErrorBanner, Input, Label, Select } from "@/components/ui";
+import FormDraft from "@/components/form-draft";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can, isManager } from "@/lib/permissions";
@@ -97,6 +98,7 @@ export default async function PhysicalPage({
             空欄の項目はスキップされます。まとめて複数項目を入力できます。
           </p>
           <form action={recordPhysicalMeasurements} className="space-y-3">
+            <FormDraft storageKey="physical-measure" />
             <div className="flex gap-2">
               <div className="min-w-0 flex-1">
                 <Label htmlFor="user_id">選手</Label>

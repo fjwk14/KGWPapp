@@ -54,6 +54,8 @@ type PendingOp =
   | { kind: "delete"; id: string };
 
 const opsKey = (matchId: string) => `kgtv-stats-ops-${matchId}`;
+// 記録セッションの状態(モード/ピリオド/E)の保存キー。中断→再開に使う。
+const sessionKey = (matchId: string) => `kgtv-stats-session-${matchId}`;
 
 function loadOps(matchId: string): PendingOp[] {
   try {
@@ -179,6 +181,39 @@ export default function LiveScreen({
       // localStorage不可でもメモリキューで動作継続
     }
   }, [ops, matchId]);
+
+  // ---------- 中断・再開: 記録セッションの状態を保存/復元 ----------
+  // イベント自体は上のキュー+DB同期で残るが、モード・ピリオド・E状態も
+  // 保存しておくことで、画面を離れて戻っても「続きから」記録できる。
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(sessionKey(matchId));
+      if (!raw) return;
+      const s = JSON.parse(raw) as {
+        mode?: RecordMode;
+        quarter?: Quarter;
+        extraMan?: boolean;
+      };
+      if (s.mode === "manager" && canManagerMode) setMode("manager");
+      else if (s.mode === "analysis" && canAnalysisMode) setMode("analysis");
+      if (s.quarter && QUARTERS.includes(s.quarter)) setQuarter(s.quarter);
+      if (typeof s.extraMan === "boolean") setExtraMan(s.extraMan);
+    } catch {
+      // 復元に失敗しても通常フローで開始できるので無視
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        sessionKey(matchId),
+        JSON.stringify({ mode, quarter, extraMan })
+      );
+    } catch {
+      // 保存不可でも動作は継続
+    }
+  }, [mode, quarter, extraMan, matchId]);
 
   const flush = useCallback(async () => {
     if (flushing.current || !navigator.onLine) return;
@@ -398,6 +433,12 @@ export default function LiveScreen({
         })
         .eq("id", matchId);
       if (error) throw error;
+      // 試合終了で記録セッション状態(モード/ピリオド/E)の保存も片付ける
+      try {
+        localStorage.removeItem(sessionKey(matchId));
+      } catch {
+        // 消せなくても支障はない
+      }
       router.push(`/matches/${matchId}/scoresheet`);
     } catch {
       window.alert(
@@ -563,6 +604,10 @@ export default function LiveScreen({
           ✓ {flash}
         </div>
       )}
+
+      <p className="text-center text-[11px] text-slate-400">
+        💾 記録は自動保存されます。中断してもこの画面に戻れば続きから記録できます。
+      </p>
 
       {/* 選手グリッド */}
       <div className="grid grid-cols-4 gap-2">
@@ -775,10 +820,12 @@ export default function LiveScreen({
                       })
                     }
                     className={clsx(
-                      "min-h-14 rounded-lg text-lg font-bold",
+                      "min-h-14 rounded-lg text-base font-bold",
                       res === "goal" && "bg-emerald-500 text-white",
                       res === "miss" && "bg-slate-200 text-slate-700",
-                      res === "blocked" && "bg-amber-100 text-amber-700"
+                      res === "blocked" && "bg-amber-100 text-amber-700",
+                      res === "gk_save" && "bg-sky-100 text-sky-700",
+                      res === "corner" && "bg-purple-100 text-purple-700"
                     )}
                   >
                     {SHOT_RESULT_LABELS[res]}

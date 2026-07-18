@@ -8,6 +8,7 @@ import {
   Select,
   Textarea,
 } from "@/components/ui";
+import FormDraft from "@/components/form-draft";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
@@ -85,6 +86,7 @@ export default async function ProposalsPage({
       <Card className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-600">提案する</h2>
         <form action={createProposal} className="space-y-2">
+          <FormDraft storageKey="proposal-new" />
           <div className="flex gap-2">
             <div className="w-32 shrink-0">
               <Label htmlFor="category">種別</Label>

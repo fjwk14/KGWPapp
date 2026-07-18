@@ -46,7 +46,7 @@ export type ShotSubtype =
   | "penalty"
   | "six_m"
   | "other";
-export type ShotResult = "goal" | "miss" | "blocked";
+export type ShotResult = "goal" | "miss" | "blocked" | "gk_save" | "corner";
 export type MissSubtype = "pass" | "keep" | "other";
 export type GkResult = "goal_against" | "block" | "off_target";
 
@@ -83,9 +83,11 @@ export const SHOT_SUBTYPE_LABELS: Record<ShotSubtype, string> = {
 };
 
 export const SHOT_RESULT_LABELS: Record<ShotResult, string> = {
-  goal: "◯ゴール",
-  miss: "×ミス",
-  blocked: "Bブロック",
+  goal: "ゴール",
+  miss: "枠外",
+  blocked: "ブロック",
+  gk_save: "GK",
+  corner: "コーナー",
 };
 
 export const MISS_SUBTYPE_LABELS: Record<MissSubtype, string> = {

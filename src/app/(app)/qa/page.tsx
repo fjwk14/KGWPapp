@@ -8,6 +8,7 @@ import {
   Select,
   Textarea,
 } from "@/components/ui";
+import FormDraft from "@/components/form-draft";
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { QA_CATEGORY_LABELS } from "@/lib/constants";
@@ -63,6 +64,7 @@ export default async function QaPage({
       <Card className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-600">質問する</h2>
         <form action={askQuestion} className="space-y-2">
+          <FormDraft storageKey="qa-new" />
           <div className="flex gap-2">
             <div className="w-32 shrink-0">
               <Label htmlFor="category">種別</Label>
