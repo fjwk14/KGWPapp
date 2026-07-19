@@ -173,6 +173,7 @@ export interface PracticeAttendance {
   team_id: string;
   user_id: string;
   status: AttendanceStatus;
+  reason: string | null;
   created_at: string;
 }
 

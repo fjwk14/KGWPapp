@@ -76,7 +76,7 @@ export default async function PracticeDetailPage({
       .order("cap_number"),
     supabase
       .from("practice_attendances")
-      .select("user_id, status")
+      .select("user_id, status, reason")
       .eq("practice_id", id),
     supabase
       .from("peer_feedbacks")
@@ -121,11 +121,12 @@ export default async function PracticeDetailPage({
     manager: isManager(m),
   }));
 
-  const statusByUser = new Map(
-    ((attData ?? []) as Pick<PracticeAttendance, "user_id" | "status">[]).map(
-      (a) => [a.user_id, a.status]
-    )
-  );
+  const attRows = (attData ?? []) as Pick<
+    PracticeAttendance,
+    "user_id" | "status" | "reason"
+  >[];
+  const statusByUser = new Map(attRows.map((a) => [a.user_id, a.status]));
+  const reasonByUser = new Map(attRows.map((a) => [a.user_id, a.reason]));
 
   const canRecord = can.recordPractice(membership);
 
@@ -210,7 +211,7 @@ export default async function PracticeDetailPage({
           <form action={updatePractice} className="space-y-3">
             <input type="hidden" name="practice_id" value={practice.id} />
             <div className="flex gap-2">
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-[3]">
                 <Label htmlFor="practice_date">日付</Label>
                 <Input
                   type="date"
@@ -220,22 +221,24 @@ export default async function PracticeDetailPage({
                   className="appearance-none text-sm"
                 />
               </div>
-              <div className="w-28 shrink-0">
+              <div className="min-w-0 flex-[2]">
                 <Label htmlFor="start_time">開始</Label>
                 <Input
                   type="time"
                   name="start_time"
                   id="start_time"
+                  step={1800}
                   defaultValue={practice.start_time ?? ""}
                   className="appearance-none text-sm"
                 />
               </div>
-              <div className="w-28 shrink-0">
+              <div className="min-w-0 flex-[2]">
                 <Label htmlFor="end_time">終了</Label>
                 <Input
                   type="time"
                   name="end_time"
                   id="end_time"
+                  step={1800}
                   defaultValue={practice.end_time ?? ""}
                   className="appearance-none text-sm"
                 />
@@ -300,20 +303,36 @@ export default async function PracticeDetailPage({
       {/* 自分の出欠を申告(全員が使える。予定でも実施済みでも回答・修正できる) */}
       <Card className="space-y-2">
         <h2 className="text-sm font-semibold text-slate-600">あなたの出欠</h2>
-        <form action={submitMyAttendance} className="grid grid-cols-5 gap-1.5">
+        <form action={submitMyAttendance} className="space-y-2">
           <input type="hidden" name="practice_id" value={practice.id} />
-          {STATUS_ORDER.map((st) => (
-            <Button
-              key={st}
-              type="submit"
-              name="status"
-              value={st}
-              variant={statusByUser.get(userId) === st ? "primary" : "secondary"}
-              className="min-h-11 px-0.5 text-[11px]"
-            >
-              {ATTENDANCE_LABELS[st]}
-            </Button>
-          ))}
+          <div className="grid grid-cols-5 gap-1.5">
+            {STATUS_ORDER.map((st) => (
+              <Button
+                key={st}
+                type="submit"
+                name="status"
+                value={st}
+                variant={statusByUser.get(userId) === st ? "primary" : "secondary"}
+                className="min-h-11 px-0.5 text-[11px]"
+              >
+                {ATTENDANCE_LABELS[st]}
+              </Button>
+            ))}
+          </div>
+          <div>
+            <Label htmlFor="attendance_reason" className="text-xs text-slate-400">
+              理由(任意・出席以外を選ぶ場合はチーム内に公開されます)
+            </Label>
+            <Input
+              type="text"
+              name="reason"
+              id="attendance_reason"
+              defaultValue={reasonByUser.get(userId) ?? ""}
+              placeholder="例: 発熱のため欠席します"
+              maxLength={300}
+              className="text-sm"
+            />
+          </div>
         </form>
       </Card>
 
@@ -450,26 +469,32 @@ export default async function PracticeDetailPage({
           </p>
           {members.map((m) => {
             const cur = statusByUser.get(m.user_id) ?? "present";
+            const reason = reasonByUser.get(m.user_id);
             return (
-              <Card key={m.user_id} className="flex items-center gap-2 p-2">
-                <RoleBadge manager={m.manager} />
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                  {m.cap_number ? `#${m.cap_number} ` : ""}
-                  {m.name}
-                </span>
-                <div className="w-24 shrink-0">
-                  <Select
-                    name={`status_${m.user_id}`}
-                    defaultValue={cur}
-                    className="py-2 text-sm"
-                  >
-                    {STATUS_ORDER.map((st) => (
-                      <option key={st} value={st}>
-                        {ATTENDANCE_LABELS[st]}
-                      </option>
-                    ))}
-                  </Select>
+              <Card key={m.user_id} className="space-y-1 p-2">
+                <div className="flex items-center gap-2">
+                  <RoleBadge manager={m.manager} />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                    {m.cap_number ? `#${m.cap_number} ` : ""}
+                    {m.name}
+                  </span>
+                  <div className="w-24 shrink-0">
+                    <Select
+                      name={`status_${m.user_id}`}
+                      defaultValue={cur}
+                      className="py-2 text-sm"
+                    >
+                      {STATUS_ORDER.map((st) => (
+                        <option key={st} value={st}>
+                          {ATTENDANCE_LABELS[st]}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
                 </div>
+                {reason && (
+                  <p className="pl-1 text-xs text-slate-500">理由: {reason}</p>
+                )}
               </Card>
             );
           })}
@@ -486,20 +511,26 @@ export default async function PracticeDetailPage({
           </h2>
           {members.map((m) => {
             const cur = statusByUser.get(m.user_id);
+            const reason = reasonByUser.get(m.user_id);
             return (
-              <Card key={m.user_id} className="flex items-center gap-2 p-2">
-                <RoleBadge manager={m.manager} />
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                  {m.cap_number ? `#${m.cap_number} ` : ""}
-                  {m.name}
-                </span>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    cur ? ATTENDANCE_STYLES[cur] : "bg-slate-100 text-slate-400"
-                  }`}
-                >
-                  {cur ? ATTENDANCE_LABELS[cur] : "未回答"}
-                </span>
+              <Card key={m.user_id} className="space-y-1 p-2">
+                <div className="flex items-center gap-2">
+                  <RoleBadge manager={m.manager} />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                    {m.cap_number ? `#${m.cap_number} ` : ""}
+                    {m.name}
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      cur ? ATTENDANCE_STYLES[cur] : "bg-slate-100 text-slate-400"
+                    }`}
+                  >
+                    {cur ? ATTENDANCE_LABELS[cur] : "未回答"}
+                  </span>
+                </div>
+                {reason && (
+                  <p className="pl-1 text-xs text-slate-500">理由: {reason}</p>
+                )}
               </Card>
             );
           })}

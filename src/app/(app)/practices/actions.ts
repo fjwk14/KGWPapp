@@ -92,10 +92,12 @@ export async function submitMyAttendance(formData: FormData) {
   const status = (ATTENDANCE_STATUSES as readonly string[]).includes(raw)
     ? raw
     : "present";
+  // 理由は出席以外を回答したときだけ意味を持つ(出席に戻した場合は消す)
+  const reason = status === "present" ? null : cleanText(formData.get("reason"), 300);
 
   const supabase = await createClient();
   const { error } = await supabase.from("practice_attendances").upsert(
-    { practice_id: practiceId.data, team_id: team.id, user_id: userId, status },
+    { practice_id: practiceId.data, team_id: team.id, user_id: userId, status, reason },
     { onConflict: "practice_id,user_id" }
   );
   if (error) {

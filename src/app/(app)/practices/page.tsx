@@ -212,6 +212,7 @@ export default async function PracticesPage({
                   type="time"
                   name="start_time"
                   id="start_time"
+                  step={1800}
                   className="appearance-none text-sm"
                 />
               </div>
@@ -221,6 +222,7 @@ export default async function PracticesPage({
                   type="time"
                   name="end_time"
                   id="end_time"
+                  step={1800}
                   className="appearance-none text-sm"
                 />
               </div>
