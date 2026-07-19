@@ -63,6 +63,17 @@ export default async function NewMatchPage({
             <Label htmlFor="notes">メモ</Label>
             <Textarea id="notes" name="notes" rows={2} />
           </div>
+          {/* 学連が運営に関わる試合はチェックすると、学連ロールのメンバーに
+              試合ごとの特別功労ポイントが自動加算される */}
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              name="gakuren_involved"
+              value="1"
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            この試合の運営には学連が関わっている
+          </label>
           <Button type="submit" className="w-full">
             登録する
           </Button>

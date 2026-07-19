@@ -24,6 +24,7 @@ export const POINT_RULES = {
   proposalAdopted: 30, // 提案が採用されるごと
   qaAnswer: 3, // Q&Aで回答するごと
   qaBestAnswer: 10, // ベストアンサーに選ばれるごと(回答分に加算)
+  gakurenPerMatch: 3, // 学連ロール保持者が、学連関与試合1件につき
 } as const;
 
 export const POINT_RULE_LABELS: { label: string; value: string }[] = [
@@ -38,6 +39,7 @@ export const POINT_RULE_LABELS: { label: string; value: string }[] = [
   { label: "提案が採用される", value: "+30 / 件" },
   { label: "Q&Aで回答", value: "+3 / 回" },
   { label: "ベストアンサーに選ばれる", value: "+10 / 回" },
+  { label: "学連の大会運営(学連ロール)", value: "+3 / 試合" },
   { label: "特別功労(幹部が理由付きで付与)", value: "都度1〜50" },
 ];
 
@@ -96,6 +98,7 @@ export interface PointInputs {
   proposalsAdopted: number;
   qaAnswers: number;
   qaBestAnswers: number;
+  gakurenMatches: number; // 学連ロール保持者のみ加算(学連関与試合の件数)
   manualPoints: number; // 幹部が理由付きで手動付与したポイントの合計
 }
 
@@ -111,6 +114,7 @@ export const emptyPointInputs = (): PointInputs => ({
   proposalsAdopted: 0,
   qaAnswers: 0,
   qaBestAnswers: 0,
+  gakurenMatches: 0,
   manualPoints: 0,
 });
 
@@ -125,6 +129,7 @@ export interface PointBreakdown {
   tags: number;
   proposals: number;
   qa: number;
+  gakuren: number;
   manual: number;
   total: number;
 }
@@ -158,6 +163,7 @@ export function computePoints(input: PointInputs): PointBreakdown {
   const qa =
     input.qaAnswers * POINT_RULES.qaAnswer +
     input.qaBestAnswers * POINT_RULES.qaBestAnswer;
+  const gakuren = input.gakurenMatches * POINT_RULES.gakurenPerMatch;
   const manual = input.manualPoints;
   const total =
     condition +
@@ -170,6 +176,7 @@ export function computePoints(input: PointInputs): PointBreakdown {
     tags +
     proposals +
     qa +
+    gakuren +
     manual;
   return {
     condition,
@@ -182,6 +189,7 @@ export function computePoints(input: PointInputs): PointBreakdown {
     tags,
     proposals,
     qa,
+    gakuren,
     manual,
     total,
   };

@@ -3,6 +3,7 @@ export type Role =
   | "manager"
   | "tactical_staff" // 表示名: 戦術チーム
   | "analysis_team" // 表示名: 分析チーム
+  | "gakuren" // 表示名: 学連(学連主体の大会運営を手伝う担当)
   | "executive"
   | "captain"
   | "admin";
@@ -75,6 +76,7 @@ export interface Match {
   quarter_scores: QuarterScores | null;
   video_url: string | null;
   notes: string | null;
+  gakuren_involved: boolean;
   created_by: string | null;
   created_at: string;
 }

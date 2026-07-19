@@ -163,6 +163,18 @@ export default async function EditMatchPage({
             <Label htmlFor="notes">メモ</Label>
             <Textarea id="notes" name="notes" rows={3} defaultValue={m.notes ?? ""} />
           </div>
+          {/* 学連が運営に関わる試合はチェックすると、学連ロールのメンバーに
+              試合ごとの特別功労ポイントが自動加算される */}
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              name="gakuren_involved"
+              value="1"
+              defaultChecked={m.gakuren_involved}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            この試合の運営には学連が関わっている
+          </label>
           <div className="flex gap-2">
             <Button type="submit" className="flex-1">
               保存する

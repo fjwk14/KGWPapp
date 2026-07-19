@@ -67,6 +67,12 @@ describe("computePoints", () => {
     expect(b.manual).toBe(42);
     expect(b.total).toBe(42);
   });
+
+  it("学連関与試合は1件につき+3(学連ロールのメンバーのみ加算される想定)", () => {
+    const b = computePoints(inputs({ gakurenMatches: 4 }));
+    expect(b.gakuren).toBe(12);
+    expect(b.total).toBe(12);
+  });
 });
 
 describe("levelOf / nextLevelProgress", () => {

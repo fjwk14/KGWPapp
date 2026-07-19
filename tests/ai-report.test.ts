@@ -16,6 +16,7 @@ const match: Match = {
   score_against: 11,
   video_url: null,
   notes: null,
+  gakuren_involved: false,
   created_by: null,
   created_at: new Date().toISOString(),
 };

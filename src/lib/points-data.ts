@@ -34,6 +34,8 @@ export async function fetchTeamPointInputs(
     { data: answers },
     { data: questions },
     { data: grants },
+    { data: gakurenMatchesData },
+    { data: gakurenMembers },
   ] = await Promise.all([
     supabase.from("condition_logs").select("user_id, log_date").eq("team_id", teamId),
     supabase.from("practice_attendances").select("user_id").eq("team_id", teamId),
@@ -49,6 +51,16 @@ export async function fetchTeamPointInputs(
     supabase.from("qa_answers").select("id, created_by").eq("team_id", teamId),
     supabase.from("qa_questions").select("resolved_answer_id").eq("team_id", teamId),
     supabase.from("point_grants").select("user_id, points").eq("team_id", teamId),
+    supabase
+      .from("matches")
+      .select("id")
+      .eq("team_id", teamId)
+      .eq("gakuren_involved", true),
+    supabase
+      .from("memberships")
+      .select("user_id, role, secondary_role")
+      .eq("team_id", teamId)
+      .or("role.eq.gakuren,secondary_role.eq.gakuren"),
   ]);
 
   const map = new Map<string, PointInputs>();
@@ -107,6 +119,15 @@ export async function fetchTeamPointInputs(
   }
   for (const r of (grants ?? []) as { user_id: string; points: number }[]) {
     ensure(r.user_id).manualPoints += r.points;
+  }
+
+  // 学連ロール(primary/secondary問わず)のメンバーにのみ、学連関与試合の
+  // 件数を加算する(役職を持たないメンバーは対象外)
+  const gakurenMatchCount = (gakurenMatchesData ?? []).length;
+  if (gakurenMatchCount > 0) {
+    for (const r of (gakurenMembers ?? []) as { user_id: string }[]) {
+      ensure(r.user_id).gakurenMatches = gakurenMatchCount;
+    }
   }
 
   return map;

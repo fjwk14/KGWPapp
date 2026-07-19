@@ -8,7 +8,7 @@ import { can } from "@/lib/permissions";
 import { tagTemplateSchema } from "@/lib/validation";
 import { z } from "zod";
 
-const ROLES = ["player", "manager", "tactical_staff", "analysis_team", "executive", "captain", "admin"] as const;
+const ROLES = ["player", "manager", "tactical_staff", "analysis_team", "gakuren", "executive", "captain", "admin"] as const;
 const STATUSES = ["active", "inactive", "graduated", "removed"] as const;
 
 function backTo(path: string, error?: string): never {

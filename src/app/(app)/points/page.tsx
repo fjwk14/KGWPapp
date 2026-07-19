@@ -187,8 +187,8 @@ export default async function PointsPage({
             🌟 特別功労ポイントを付与
           </h2>
           <p className="text-xs text-slate-400">
-            アプリの外での貢献(意見・提案とその内容・大会運営の手伝い・後輩指導など)を
-            理由付きで評価します。理由はチーム内に公開されます。
+            アプリの外での貢献(意見・提案とその内容・その他)を理由付きで評価します。
+            理由はチーム内に公開されます。
           </p>
           <form action={grantPoints} className="space-y-2">
             <div className="flex gap-2">

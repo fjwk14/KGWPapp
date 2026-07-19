@@ -29,10 +29,17 @@ export async function createMatch(formData: FormData) {
     );
   }
 
+  const gakurenInvolved = formData.get("gakuren_involved") === "1";
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("matches")
-    .insert({ ...parsed.data, team_id: team.id, created_by: userId })
+    .insert({
+      ...parsed.data,
+      gakuren_involved: gakurenInvolved,
+      team_id: team.id,
+      created_by: userId,
+    })
     .select("id")
     .single();
 
@@ -93,6 +100,7 @@ export async function updateMatch(formData: FormData) {
     score_against: d.score_against ?? null,
     quarter_scores: qs.data,
     notes: d.notes ?? null,
+    gakuren_involved: formData.get("gakuren_involved") === "1",
   };
 
   const supabase = await createClient();

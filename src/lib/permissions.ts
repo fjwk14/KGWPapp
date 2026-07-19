@@ -79,6 +79,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   manager: "マネージャー",
   tactical_staff: "戦術チーム",
   analysis_team: "分析チーム",
+  gakuren: "学連",
   executive: "幹部",
   captain: "主将",
   admin: "管理者",
