@@ -42,14 +42,13 @@ export async function updateSession(request: NextRequest) {
 
     return supabaseResponse;
   } catch {
-    // Supabase側の一時的な不調・設定不備などでここまでの処理が例外を投げると、
-    // 素の500(MIDDLEWARE_INVOCATION_FAILED)になってしまう。
-    // 未ログイン扱いにフェイルクローズし、/loginで分かりやすく再試行させる。
-    if (!isPublic) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      return NextResponse.redirect(url);
-    }
+    // Supabase側の一時的な不調・回線の瞬断などでgetUser()(認証サーバーへの
+    // 疎通確認)が例外を投げても、cookie自体は有効な場合がほとんど。
+    // ここで/loginへ飛ばす(フェイルクローズ)と、プールサイドなど電波が
+    // 不安定な環境で毎回ログインを求められる原因になる。
+    // 本当に未ログイン/セッション切れの場合は、各ページのrequireMembership()
+    // (getSession()でcookieのJWTをネットワーク往復なしで検証)が最終的に
+    // /loginへ導くので、ここではフェイルオープンして処理を先に進める。
     return NextResponse.next({ request });
   }
 }
