@@ -31,7 +31,7 @@ export const POINT_RULE_LABELS: { label: string; value: string }[] = [
   { label: "コンディションを記録", value: "+2 / 日" },
   { label: "出欠を回答", value: "+1 / 回" },
   { label: "自主練を記録(水中/ウエイト等)", value: "+3 / 日" },
-  { label: "ピアFBを送る", value: "+5 / 回" },
+  { label: "練習後の「今日のひとことFB」を送る", value: "+5 / 回" },
   { label: "コメント投稿", value: "+1 / 件(1日3件まで)" },
   { label: "返信・メンションをもらう", value: "+3 / 回" },
   { label: "クリップ作成", value: "+4 / 本" },
@@ -213,7 +213,7 @@ export function earnedBadges(input: PointInputs, total: number): Badge[] {
     badges.push({ key: "diarist", icon: "📔", label: "記録の達人", desc: "コンディションを30日記録" });
   }
   if (input.peerFeedbackSent >= 10) {
-    badges.push({ key: "encourager", icon: "🤝", label: "励まし上手", desc: "ピアFBを10回送信" });
+    badges.push({ key: "encourager", icon: "🤝", label: "励まし上手", desc: "今日のひとことFBを10回送信" });
   }
   if (input.clipsCreated >= 5) {
     badges.push({ key: "clipper", icon: "🎬", label: "分析職人", desc: "クリップを5本作成" });
