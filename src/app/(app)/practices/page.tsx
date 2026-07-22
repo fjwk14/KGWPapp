@@ -3,7 +3,11 @@ import { Button, Card, ErrorBanner, Input, Label, Select, Textarea } from "@/com
 import { requireMembership } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/permissions";
-import { ATTENDANCE_LABELS, SELF_PRACTICE_CATEGORY_LABELS } from "@/lib/constants";
+import {
+  ATTENDANCE_LABELS,
+  SELF_PRACTICE_CATEGORY_LABELS,
+  TIME_OPTIONS_30MIN,
+} from "@/lib/constants";
 import type {
   AttendanceStatus,
   Practice,
@@ -208,23 +212,25 @@ export default async function PracticesPage({
               </div>
               <div className="min-w-0 flex-[2]">
                 <Label htmlFor="start_time">開始</Label>
-                <Input
-                  type="time"
-                  name="start_time"
-                  id="start_time"
-                  step={1800}
-                  className="appearance-none text-sm"
-                />
+                <Select name="start_time" id="start_time" defaultValue="" className="text-sm">
+                  <option value="">未定</option>
+                  {TIME_OPTIONS_30MIN.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </Select>
               </div>
               <div className="min-w-0 flex-[2]">
                 <Label htmlFor="end_time">終了</Label>
-                <Input
-                  type="time"
-                  name="end_time"
-                  id="end_time"
-                  step={1800}
-                  className="appearance-none text-sm"
-                />
+                <Select name="end_time" id="end_time" defaultValue="" className="text-sm">
+                  <option value="">未定</option>
+                  {TIME_OPTIONS_30MIN.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </Select>
               </div>
             </div>
             <div>

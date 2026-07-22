@@ -1,3 +1,11 @@
+// 練習の開始/終了時刻の選択肢(30分刻み)。iOS Safariは<input type="time">の
+// step属性をホイールピッカーに反映しないため、選択式にして確実に30分刻みにする。
+export const TIME_OPTIONS_30MIN: string[] = Array.from({ length: 48 }, (_, i) => {
+  const h = Math.floor(i / 2);
+  const m = i % 2 === 0 ? "00" : "30";
+  return `${String(h).padStart(2, "0")}:${m}`;
+});
+
 // 試合登録で選べる大会名(関学水球部で使う大会)
 export const COMPETITIONS = [
   "日本学生選手権",

@@ -17,6 +17,7 @@ import {
   ATTENDANCE_LABELS,
   ATTENDANCE_STYLES,
   PRACTICE_STATUS_LABELS,
+  TIME_OPTIONS_30MIN,
 } from "@/lib/constants";
 import { feedbackTargetOf } from "@/lib/feedback";
 import { todayJST } from "@/lib/condition";
@@ -223,25 +224,42 @@ export default async function PracticeDetailPage({
               </div>
               <div className="min-w-0 flex-[2]">
                 <Label htmlFor="start_time">開始</Label>
-                <Input
-                  type="time"
+                <Select
                   name="start_time"
                   id="start_time"
-                  step={1800}
                   defaultValue={practice.start_time ?? ""}
-                  className="appearance-none text-sm"
-                />
+                  className="text-sm"
+                >
+                  <option value="">未定</option>
+                  {/* 30分刻み導入前に登録された値も選択肢として残す */}
+                  {practice.start_time && !TIME_OPTIONS_30MIN.includes(practice.start_time) && (
+                    <option value={practice.start_time}>{practice.start_time}</option>
+                  )}
+                  {TIME_OPTIONS_30MIN.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </Select>
               </div>
               <div className="min-w-0 flex-[2]">
                 <Label htmlFor="end_time">終了</Label>
-                <Input
-                  type="time"
+                <Select
                   name="end_time"
                   id="end_time"
-                  step={1800}
                   defaultValue={practice.end_time ?? ""}
-                  className="appearance-none text-sm"
-                />
+                  className="text-sm"
+                >
+                  <option value="">未定</option>
+                  {practice.end_time && !TIME_OPTIONS_30MIN.includes(practice.end_time) && (
+                    <option value={practice.end_time}>{practice.end_time}</option>
+                  )}
+                  {TIME_OPTIONS_30MIN.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </Select>
               </div>
             </div>
             <div>
