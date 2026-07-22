@@ -78,8 +78,12 @@ export default async function AppLayout({
     <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
         {/* 関学カラー(青×金)のアクセントライン。チームロゴのシールドを踏襲した控えめな装飾。
-            青→金を直接混ぜると中間が濁った灰色になるため、白を経由して滑らかに繋ぐ */}
-        <div className="h-1 bg-gradient-to-r from-brand-600 via-white to-amber-400" />
+            青→金のグラデーションは中間が濁る/白く抜けて不自然に見えるため、
+            2色をくっきり分けたツートンにする */}
+        <div className="flex h-1">
+          <div className="flex-[3] bg-brand-600" />
+          <div className="flex-[2] bg-amber-400" />
+        </div>
         <div className="flex items-center justify-between px-4 py-3">
           <Link href="/dashboard" className="flex min-w-0 items-center gap-2 font-bold text-brand-900">
             {team.logo_url && (

@@ -201,8 +201,8 @@ export default async function DashboardPage() {
         </LinkButton>
       </div>
 
-      {/* シャチの一言(マスコット)。関学カラーの金アクセントで少し華やかに */}
-      <Card className="flex items-center gap-3 border-brand-200 bg-brand-50/50 border-l-4 border-l-amber-400">
+      {/* シャチの一言(マスコット)。左右を金/青で挟み、関学カラーの青×金を表現 */}
+      <Card className="flex items-center gap-3 border-brand-200 bg-brand-50/50 border-l-4 border-l-amber-400 border-r-4 border-r-brand-600">
         {/* アプリアイコンのシャチを流用 */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
