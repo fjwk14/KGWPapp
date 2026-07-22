@@ -208,7 +208,7 @@ export default async function DashboardPage() {
         <img
           src="/icon.png"
           alt="シャチ"
-          className="h-12 w-12 shrink-0 rounded-full bg-white object-contain ring-2 ring-amber-300"
+          className="h-12 w-12 shrink-0 rounded-full bg-white object-contain"
         />
         <p className="min-w-0 text-sm text-slate-700">{shachi}</p>
       </Card>

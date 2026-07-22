@@ -77,8 +77,9 @@ export default async function AppLayout({
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
-        {/* 関学カラー(青×金)のアクセントライン。チームロゴのシールドを踏襲した控えめな装飾 */}
-        <div className="h-1 bg-gradient-to-r from-brand-600 via-brand-500 to-amber-400" />
+        {/* 関学カラー(青×金)のアクセントライン。チームロゴのシールドを踏襲した控えめな装飾。
+            青→金を直接混ぜると中間が濁った灰色になるため、白を経由して滑らかに繋ぐ */}
+        <div className="h-1 bg-gradient-to-r from-brand-600 via-white to-amber-400" />
         <div className="flex items-center justify-between px-4 py-3">
           <Link href="/dashboard" className="flex min-w-0 items-center gap-2 font-bold text-brand-900">
             {team.logo_url && (
